@@ -1,11 +1,11 @@
-# GSS-MIS: Enhanced Generalized Subset Simulation with Multiple Importance Sampling (Python)
+# GSS-MIS: Generalized Subset Simulation with Multiple Importance Sampling (Python)
 
 Python implementation of **generalized subset simulation with multiple importance sampling (GSS-MIS)** for estimating small failure probabilities of multiple stochastic responses. This code accompanies the paper:
 
 > **Enhanced generalized subset simulation with multiple importance sampling for reliability estimation.**
 > Weili Xia and Zihan Liao. *Computers & Structures*, 313 (2025), 107741. doi: [10.1016/j.compstruc.2025.107741](https://doi.org/10.1016/j.compstruc.2025.107741)
 
-Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/Enhanced-generalized-Subset-Simulation-with-Multiple-Importance-Sampling-for-Reliability-Estimation).
+Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/generalized-Subset-Simulation-with-Multiple-Importance-Sampling).
 
 ## Contents
 
@@ -52,30 +52,29 @@ python -m pip install -r requirements.txt
 
 ```text
 .
-├── drive_GSS_MIS.py          # command-line and Python experiment driver
-├── GSS_MIS.py                # generalized subset-simulation framework
-├── GSS_MIS_model.py          # intermediate events, seeds and sample records
-├── MIS_Rel.py                # log-domain balance-heuristic MIS estimator
-├── SuS.py                    # independent subset-simulation comparison
-├── Limit_state_functions/   # numerical examples Ex1 and Ex2
-├── Support_Fun/             # sampling, models, MIS weights and log operations
-├── tests/                    # numerical conventions and accounting tests
+├── drive_GSS_MIS.py          # GSS-MIS experiment driver
+├── drive_SuS.py              # independent scalar SuS experiment driver
+├── SeMCS.py                  # shared sequential iteration engine
+├── GSS_MIS.py                # standalone union intermediate distribution
+├── SuS.py                    # shared SuS intermediate distribution
+├── Limit_state_functions/   # Ex1 and Ex2
+├── Support_Fun/             # CW_aMH, MIS, SedSlt and numerical helpers
+├── tests/
 ├── requirements.txt
 ├── LICENSE
 └── README.md
 ```
 
-Source files use the same algorithm, example and helper names as the MATLAB
-version. `Support_Fun/` contains `CW_aMH.py`, `Direct.py`, `ScalarExample.py`,
-`SuS_model.py`, `WgtMis_Blc.py` and `MisInt.py`; its
-`Operations_on_Logarithmic_values/` folder contains `logsum.py` and `logmean.py`.
-The example formulas are implemented separately in `Ex1.py` and `Ex2.py`.
+`SeMCS` and `SuS` are shared with the SeMIS reliability Python toolbox.
+The distribution classes define intermediate states and convergence, samplers
+generate and select samples, `SeMCS.RunIte()` owns iteration, and the drivers
+run repetitions and estimate probabilities. `Support_Fun/MIS.py` is a separate
+postprocessor.
 
-Python package initializers, random-number/numerical compatibility helpers and
-test configuration are language-specific. MATLAB's `DspRst` and `VabSrk` handle
-iteration display and preallocated-array trimming; Python reports results in
-the driver and accumulates levels in lists, so no unused counterparts are added.
-The previous `Benchmark` entry point and numerical-helper imports remain available.
+Both toolboxes use `SeMCS(sampler)` with the model stored in `sampler.BayStc`.
+The drivers share `(example, N, repeats, seed)` and return summary dictionaries
+with per-run `records`. Python's package and numerical helpers are retained only
+where needed. Example and logarithmic helper implementations have matching MATLAB names.
 
 ## Quick start
 
@@ -89,7 +88,7 @@ By default this runs Example 1 with 100 independent repetitions and seed 2026. T
 
 ```bash
 python drive_GSS_MIS.py --example 2 --repeats 100 --output results_ex2.json
-python drive_GSS_MIS.py --example 2 --algorithm SuS --repeats 100
+python drive_SuS.py --example 2 --repeats 100
 ```
 
 The driver can also be called from Python:
@@ -119,7 +118,28 @@ The supplied Python sampler is specialized to **two independent standard-normal 
 
 1. Follow `Limit_state_functions/Ex1.py` and its `Benchmark` base class to provide `nfun`, `count`, and an `evaluate(X)` method returning an array of shape `[nfun, nsamples]` for input `[2, nsamples]`.
 2. Increment `count` by `nfun * nsamples` on every actual evaluation; optionally track `joint_count` by `nsamples` for reporting.
-3. Pass the model to `run_gss(model, N, Random(seed))`, then call `estimate_mis(run)`.
+3. Construct `state = GSS_MIS(model)`, `sampler = CW_aMH(state, Random(seed))`,
+   and `engine = SeMCS(sampler)`. Set `engine.NumSam = N` and call
+   `result = engine.RunIte()`, followed by `MIS(result).Pf_hat`.
+
+```python
+from GSS_MIS import GSS_MIS
+from SeMCS import SeMCS
+from Support_Fun.CW_aMH import CW_aMH
+from Support_Fun.MIS import MIS
+from Support_Fun.random import Random
+from Limit_state_functions.Ex1 import Ex1
+
+engine = SeMCS(CW_aMH(GSS_MIS(Ex1()), Random(2026)))
+engine.NumSam = 440
+engine.MaxIte = 1000
+result = engine.RunIte()
+print(MIS(result).Pf_hat)
+```
+
+`NumSam` can also be a per-level vector; an exhausted finite schedule raises an
+error rather than silently repeating its final size. Optional `G` and `H` lists
+provide predefined intermediate states.
 
 A different input dimension or probability distribution requires an appropriate sampler and prior-density implementation; changing only the performance function does not change the input model.
 
@@ -146,10 +166,10 @@ The SuS baseline runs each performance function independently and sums the actua
 
 | Step | Code | Paper component |
 |---|---|---|
-| Intermediate union events | `GSS_MIS.run_gss`, `GSS_MIS_model` | Generalized subset-simulation construction |
+| Intermediate union events | `GSS_MIS.UpdObj`, `SeMCS.RunIte` | Generalized subset-simulation construction |
 | Component-wise Metropolis sampling | `Support_Fun/CW_aMH.sample_cw` | Conditional sampling within intermediate events |
-| Recursive normalizing constants | `MIS_Rel.estimate_mis` | Intermediate importance-distribution normalization |
-| Balance-heuristic MIS estimator | `MIS_Rel.estimate_mis`, `Support_Fun/WgtMis_Blc.py`, `Support_Fun/MisInt.py` | Combined failure-probability estimator, Eq. (18) |
+| Recursive normalizing constants | `Support_Fun.MIS` | Intermediate importance-distribution normalization |
+| Balance-heuristic MIS estimator | `Support_Fun.MIS`, `Support_Fun/WgtMis_Blc.py`, `Support_Fun/MisInt.py` | Combined failure-probability estimator, Eq. (18) |
 | Numerical benchmarks | `Limit_state_functions` | First two numerical examples |
 
 ## Tests
@@ -163,10 +183,16 @@ Tests cover benchmark formulas, strict membership, rounding and quantile convent
 ## Implementation notes
 
 - Coordinate/function arrays use rows for dimensions or performance functions and columns for samples. MCMC arrays use `[Ndim, Nc, Ns]` and column-major flattening; Python indices start at zero.
-- Quantiles use NumPy's `hazen` method. Seed standard deviations use `ddof=1`, with zero spread for a single seed. Positive half-integer chain counts are rounded upward.
+- GSS quantiles use NumPy's `hazen` method. Seed standard deviations use `ddof=1`, with zero spread for a single seed. Positive half-integer chain counts are rounded upward.
 - The component-wise Metropolis scale is fixed within each level. The initial independent sample is retained; subsequent chain steps do not prepend the seeds.
-- Historical proposal supports and realized sample counts are stored in the returned `Run` record and reused by the MIS estimator. Estimation does not mutate the stored function values.
+- Historical proposal supports and realized sample counts are stored in the returned result dictionary and reused by the MIS estimator. Estimation does not mutate the stored function values.
 - The driver accepts command-line options and runs repetitions serially. `--output` saves the complete replicate records as JSON.
+
+The shared `SuS` class takes explicit coordinate, threshold, and clipping options.
+`drive_SuS.py` uses `SuS(PF, "physical", "midpoint", False)` here; the SeMIS
+reliability driver uses `SuS(PF, "standard_normal", "hazen", True)`. These retain
+each benchmark's sampling convention without hidden repository-specific behavior.
+The classical product estimator is computed in `drive_SuS`, not in the distribution class.
 
 ## Citation
 

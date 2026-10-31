@@ -13,17 +13,18 @@ Arrays store coordinates/functions by row and samples by column.
 import numpy as np
 from Support_Fun.numerics import EPS, mstd
 from Support_Fun.Direct import Direct
-from GSS_MIS_model import eval_y
+from .SedSlt import SedSlt
 
 
-def sample_cw(tf, g, h, rng, *, N=None, xseed=None, yseed=None, steps=1):
+def sample_cw(tf, rng, *, N=None, xseed=None, yseed=None, steps=1, evaluator=None):
+    evaluate = evaluator
     # Uniform component proposals use the seed sample standard deviation.
     # The scale remains fixed within each level.
     initial = xseed is None
     if initial:
         nc = int(N)
         xseed = Direct.sample(rng, nc)
-        yseed = eval_y(tf, xseed, g, h)
+        yseed = evaluate(xseed)
         calls = nc
     else:
         xseed = xseed.copy()
@@ -51,7 +52,7 @@ def sample_cw(tf, g, h, rng, *, N=None, xseed=None, yseed=None, steps=1):
         ids = np.flatnonzero(~unchanged)
         n = len(ids)
         if n:
-            yy = eval_y(tf, x[:, ids, k], g, h)
+            yy = evaluate(x[:, ids, k])
             y[:, ids, k] = yy
             with np.errstate(invalid="ignore"):
                 reject = np.exp(yy[0] - yseed[0, ids]) < rng.rand(1, n).ravel()
@@ -67,3 +68,26 @@ def sample_cw(tf, g, h, rng, *, N=None, xseed=None, yseed=None, steps=1):
         calls,
         sigma,
     )
+
+
+class CW_aMH:
+    """Componentwise sampler carrying its intermediate distribution in BayStc."""
+    def __init__(self, BayStc, rng):
+        self.BayStc, self.rng = BayStc, rng
+
+    def SamGen(self, *args):
+        model = self.BayStc
+        if len(args) == 2:
+            kwargs = dict(N=args[0], steps=args[1])
+        else:
+            kwargs = dict(xseed=args[0], yseed=args[1], steps=args[2])
+        def evaluate(x):
+            evaluated = model.EvlY(x)
+            return np.vstack((evaluated.EvlLKF(), evaluated.EvlPDF(), evaluated.Y))
+        x, y, calls, self.sigma = sample_cw(model.TF, self.rng,
+                                          evaluator=evaluate, **kwargs)
+        return x, y, calls, model
+
+    def SltSed(self, x, y, N):
+        model = self.BayStc
+        return SedSlt(x, y, model.G, model.H, N, self.rng)

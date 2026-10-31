@@ -5,6 +5,7 @@ https://doi.org/10.1016/j.compstruc.2025.107741
 """
 
 import numpy as np
+from Support_Fun.Direct import Direct
 from Limit_state_functions.Ex1 import Ex1
 from Limit_state_functions.Ex2 import Ex2
 
@@ -19,6 +20,10 @@ class ScalarExample:
         self.count = 0
         self.joint_count = 0
         self._model = (Ex1 if example == 1 else Ex2)()
+
+    @staticmethod
+    def log_reference(x):
+        return Direct.logpdf(x).sum(axis=0)
 
     def evaluate(self, x):
         self.joint_count += x.shape[1]

@@ -2,7 +2,8 @@ import unittest
 import numpy as np
 from Limit_state_functions.benchmark import Benchmark
 from Support_Fun.numerics import mround, mstd, quantile, source_logsum
-from GSS_MIS_model import select_seeds, support
+from GSS_MIS import support
+from Support_Fun.SedSlt import SedSlt
 from Support_Fun.random import Random
 
 
@@ -32,7 +33,7 @@ class CoreTests(unittest.TestCase):
             x = np.zeros((2, 100))
             y = np.zeros((4, 100))
             y[3] = np.r_[np.full(k, -1.0), np.ones(100 - k)]
-            xx, yy, idx = select_seeds(x, y, 0, True, 100, Random(1))
+            xx, yy, idx = SedSlt(x, y, 0, True, 100, Random(1))
             self.assertEqual(xx.shape[1], nc)
 
     def test_nonfinite(self):
