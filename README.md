@@ -58,12 +58,24 @@ python -m pip install -r requirements.txt
 ├── MIS_Rel.py                # log-domain balance-heuristic MIS estimator
 ├── SuS.py                    # independent subset-simulation comparison
 ├── Limit_state_functions/   # numerical examples Ex1 and Ex2
-├── Support_Fun/             # CW_aMH, random draws and numerical helpers
+├── Support_Fun/             # sampling, models, MIS weights and log operations
 ├── tests/                    # numerical conventions and accounting tests
 ├── requirements.txt
 ├── LICENSE
 └── README.md
 ```
+
+Source files use the same algorithm, example and helper names as the MATLAB
+version. `Support_Fun/` contains `CW_aMH.py`, `Direct.py`, `ScalarExample.py`,
+`SuS_model.py`, `WgtMis_Blc.py` and `MisInt.py`; its
+`Operations_on_Logarithmic_values/` folder contains `logsum.py` and `logmean.py`.
+The example formulas are implemented separately in `Ex1.py` and `Ex2.py`.
+
+Python package initializers, random-number/numerical compatibility helpers and
+test configuration are language-specific. MATLAB's `DspRst` and `VabSrk` handle
+iteration display and preallocated-array trimming; Python reports results in
+the driver and accumulates levels in lists, so no unused counterparts are added.
+The previous `Benchmark` entry point and numerical-helper imports remain available.
 
 ## Quick start
 
@@ -105,7 +117,7 @@ Only these two simple numerical examples are included. Integer chain lengths can
 
 The supplied Python sampler is specialized to **two independent standard-normal coordinates**. For another problem with that input model:
 
-1. Follow `Limit_state_functions/benchmark.py` to provide `nfun`, `count`, and an `evaluate(X)` method returning an array of shape `[nfun, nsamples]` for input `[2, nsamples]`.
+1. Follow `Limit_state_functions/Ex1.py` and its `Benchmark` base class to provide `nfun`, `count`, and an `evaluate(X)` method returning an array of shape `[nfun, nsamples]` for input `[2, nsamples]`.
 2. Increment `count` by `nfun * nsamples` on every actual evaluation; optionally track `joint_count` by `nsamples` for reporting.
 3. Pass the model to `run_gss(model, N, Random(seed))`, then call `estimate_mis(run)`.
 
@@ -137,7 +149,7 @@ The SuS baseline runs each performance function independently and sums the actua
 | Intermediate union events | `GSS_MIS.run_gss`, `GSS_MIS_model` | Generalized subset-simulation construction |
 | Component-wise Metropolis sampling | `Support_Fun/CW_aMH.sample_cw` | Conditional sampling within intermediate events |
 | Recursive normalizing constants | `MIS_Rel.estimate_mis` | Intermediate importance-distribution normalization |
-| Balance-heuristic MIS estimator | `MIS_Rel.estimate_mis` | Combined failure-probability estimator, Eq. (18) |
+| Balance-heuristic MIS estimator | `MIS_Rel.estimate_mis`, `Support_Fun/WgtMis_Blc.py`, `Support_Fun/MisInt.py` | Combined failure-probability estimator, Eq. (18) |
 | Numerical benchmarks | `Limit_state_functions` | First two numerical examples |
 
 ## Tests

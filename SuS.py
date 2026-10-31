@@ -12,6 +12,7 @@ Arrays store coordinates/functions by row and samples by column.
 
 import numpy as np
 from Support_Fun.numerics import mround
+from Support_Fun.SuS_model import SuS_model
 from Support_Fun.CW_aMH import sample_cw
 from GSS_MIS_model import select_seeds, Run
 
@@ -53,18 +54,14 @@ def run_sus(tf, N, rng, p=0.1, max_levels=1000):
         sizes.append((nc, steps))
         calls.append(ncal)
         scales.append(scale)
-        ordered = np.sort(y[3])
-        k = int(mround(len(ordered) * p))
-        if k < 1 or k >= len(ordered):
-            raise IndexError("Source SuS midpoint index outside actual sample size")
-        g = np.array((ordered[k - 1] + ordered[k]) / 2)
+        g = SuS_model.threshold(y, p)
         gs.append(g.copy())
         hs.append(h.copy())
         xseed, yseed, idx = select_seeds(x, y, g, h, N, rng)
         chosen.append(idx)
         nc = xseed.shape[1]
         steps = int(mround(N / nc)) if nc else 0
-        terminal = bool(g <= 0)
+        terminal = SuS_model.complete(g)
         if nc <= 0 or level + 1 == max_levels:
             raw = False
             break

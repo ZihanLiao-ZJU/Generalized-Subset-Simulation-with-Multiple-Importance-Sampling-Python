@@ -11,7 +11,8 @@ Arrays store coordinates/functions by row and samples by column.
 """
 
 import numpy as np
-from Support_Fun.numerics import EPS, mstd, logprior
+from Support_Fun.numerics import EPS, mstd
+from Support_Fun.Direct import Direct
 from GSS_MIS_model import eval_y
 
 
@@ -21,7 +22,7 @@ def sample_cw(tf, g, h, rng, *, N=None, xseed=None, yseed=None, steps=1):
     initial = xseed is None
     if initial:
         nc = int(N)
-        xseed = np.vstack([rng.randn(1, nc), rng.randn(1, nc)])
+        xseed = Direct.sample(rng, nc)
         yseed = eval_y(tf, xseed, g, h)
         calls = nc
     else:
@@ -42,7 +43,7 @@ def sample_cw(tf, g, h, rng, *, N=None, xseed=None, yseed=None, steps=1):
         for d in range(2):
             candidate = xseed[d] + sigma[d] * du[d, :, k]
             with np.errstate(over="ignore", invalid="ignore"):
-                reject = np.exp(logprior(candidate) - logprior(xseed[d])) < p[d, :, k]
+                reject = np.exp(Direct.logpdf(candidate) - Direct.logpdf(xseed[d])) < p[d, :, k]
             candidate[reject] = xseed[d, reject]
             x[d, :, k] = candidate
         unchanged = np.all(x[:, :, k] == xseed, axis=0)

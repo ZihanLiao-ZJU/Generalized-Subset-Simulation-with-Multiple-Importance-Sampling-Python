@@ -8,6 +8,8 @@ Arrays store coordinates/functions by row and samples by column.
 """
 
 import numpy as np
+from .Direct import Direct
+from .Operations_on_Logarithmic_values.logsum import logsum
 
 EPS = np.finfo(float).eps
 
@@ -24,17 +26,6 @@ def quantile(x, p):
     return np.quantile(x, p, axis=1, method="hazen")
 
 
-def logprior(x):
-    with np.errstate(divide="ignore", under="ignore"):
-        return np.log(np.exp(-0.5 * x * x) / np.sqrt(2 * np.pi))
-
-
-def source_logsum(a, axis=None):
-    """Original logsum real-input behavior, including mixed NaNs and Inf overrides."""
-    a = np.asarray(a)
-    m = np.max(np.where(np.isnan(a), -np.inf, a), axis=axis, keepdims=True)
-    with np.errstate(invalid="ignore", divide="ignore", over="ignore"):
-        z = m + np.log(np.sum(np.exp(a - m), axis=axis, keepdims=True))
-    z = np.where(np.isneginf(m), -np.inf, z)
-    z = np.where(np.isposinf(m), np.inf, z)
-    return np.squeeze(z) if axis is None else np.squeeze(z, axis=axis)
+# Compatibility aliases for existing callers.
+logprior = Direct.logpdf
+source_logsum = logsum

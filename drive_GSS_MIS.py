@@ -9,7 +9,9 @@ import numpy as np
 from GSS_MIS import run_gss
 from MIS_Rel import estimate_mis
 from SuS import run_sus
-from Limit_state_functions.benchmark import Benchmark
+from Limit_state_functions.Ex1 import Ex1
+from Limit_state_functions.Ex2 import Ex2
+from Support_Fun.ScalarExample import ScalarExample
 from Support_Fun.random import Random
 
 
@@ -32,7 +34,8 @@ def drive_GSS_MIS(example=1, N=None, repeats=100, seed=2026, algorithm="GSS-MIS"
         components = [None] if algorithm == "GSS-MIS" else range(2 * example)
         probabilities, calls, terminal, actual_sizes = [], [], [], []
         for component in components:
-            model = Benchmark(example, pf=component)
+            model = ((Ex1 if example == 1 else Ex2)()
+                     if component is None else ScalarExample(example, component))
             rng = Random(
                 current_seed
                 if component is None

@@ -42,5 +42,39 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(source_logsum([np.nan, np.nan]), -np.inf)
 
 
+class FileAlignmentTests(unittest.TestCase):
+    def test_example_and_scalar_interfaces(self):
+        from Limit_state_functions.Ex1 import Ex1
+        from Limit_state_functions.Ex2 import Ex2
+        from Support_Fun.ScalarExample import ScalarExample
+        x = np.random.default_rng(41).normal(size=(2, 100))
+        for example, cls in ((1, Ex1), (2, Ex2)):
+            expected = Benchmark(example).evaluate(x)
+            np.testing.assert_array_equal(cls().evaluate(x), expected)
+            for component in range(2 * example):
+                model = ScalarExample(example, component)
+                np.testing.assert_array_equal(
+                    model.evaluate(x), expected[component:component + 1]
+                )
+                self.assertEqual(model.count, 100)
+                self.assertEqual(model.joint_count, 100)
+
+    def test_direct_random_order(self):
+        from Support_Fun.Direct import Direct
+        rng = Random(17)
+        expected = np.vstack([rng.randn(1, 30), rng.randn(1, 30)])
+        np.testing.assert_array_equal(Direct.sample(Random(17), 30), expected)
+
+    def test_log_helpers(self):
+        from Support_Fun.Operations_on_Logarithmic_values import logsum, logmean
+        x = np.array([[1.0, 2.0], [3.0, 4.0]])
+        for axis in (None, 0, 1):
+            np.testing.assert_array_equal(logsum(x, axis), source_logsum(x, axis))
+            n = x.size if axis is None else x.shape[axis]
+            np.testing.assert_array_equal(
+                logmean(x, axis), source_logsum(x, axis) - np.log(n)
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

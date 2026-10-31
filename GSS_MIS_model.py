@@ -12,7 +12,8 @@ Arrays store coordinates/functions by row and samples by column.
 
 from dataclasses import dataclass
 import numpy as np
-from Support_Fun.numerics import mround, logprior
+from Support_Fun.numerics import mround
+from Support_Fun.Direct import Direct
 
 
 def support(f, g, h):
@@ -27,7 +28,7 @@ def likelihood(f, g, h):
 
 def eval_y(tf, x, g, h):
     f = tf.evaluate(x)
-    p = logprior(x).sum(axis=0)
+    p = Direct.logpdf(x).sum(axis=0)
     return np.vstack((likelihood(f, g, h), p, p, f))
 
 

@@ -11,7 +11,9 @@ Arrays store coordinates/functions by row and samples by column.
 """
 
 import numpy as np
-from Support_Fun.numerics import source_logsum
+from Support_Fun.Operations_on_Logarithmic_values.logsum import logsum
+from Support_Fun.WgtMis_Blc import WgtMis_Blc
+from Support_Fun.MisInt import MisInt
 from GSS_MIS_model import likelihood
 
 
@@ -30,7 +32,7 @@ def estimate_mis(run, trace=False):
             )
             weights -= np.nanmax(weights)
             weights[np.isnan(weights)] = -np.inf
-            c[i + 1] = c[i] + source_logsum(weights) - np.log(len(weights))
+            c[i + 1] = c[i] + logsum(weights) - np.log(len(weights))
             ys[i + 1][0] -= c[i + 1]
         nf = ys[0].shape[0] - 3
         perlevel = np.zeros((nf, count))
@@ -38,19 +40,13 @@ def estimate_mis(run, trace=False):
         G = np.vstack([np.broadcast_to(g, (nf,)) for g in run.g[:count]])
         H = np.vstack([np.broadcast_to(h, (nf,)) for h in run.h[:count]]).astype(bool)
         for i, y in enumerate(ys):
-            mask = np.any((y[None, 3:, :] < G[:, :, None]) & H[:, :, None], axis=1)
-            cross = np.where(mask, 0.0, -np.inf) + y[2][None, :] - c[:, None]
-            wm = (
-                np.log(run.nsam[i])
-                + cross[i]
-                - source_logsum(cross + np.log(run.nsam)[:, None], axis=0)
-            )
+            wm = WgtMis_Blc(y, G, H, c, run.nsam, i)
             wm_all.append(wm)
             for j in range(nf):
                 wi = y[2] - y[0] - y[1]
                 wi = wi.copy()
                 wi[y[3 + j] >= 0] = -np.inf
                 wi[np.isnan(wi)] = -np.inf
-                perlevel[j, i] = source_logsum(wm + wi) - np.log(len(wi))
-        pf = np.exp(source_logsum(perlevel, axis=1))
+                perlevel[j, i] = MisInt(wm, wi)
+        pf = np.exp(logsum(perlevel, axis=1))
     return (pf, c, wm_all, ys) if trace else (pf, c)

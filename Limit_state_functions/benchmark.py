@@ -18,21 +18,16 @@ class Benchmark:
         self.count = 0
         self.joint_count = 0
 
+    def _formulas(self, x):
+        # Backward-compatible Benchmark(example, pf=...) factory behavior.
+        from .Ex1 import Ex1
+        from .Ex2 import Ex2
+        cls = Ex1 if self.example == 1 else Ex2
+        return cls._formulas(self, x)
+
     def evaluate(self, x):
         self.joint_count += x.shape[1]
-        a, b = x
-        if self.example == 1:
-            formulas = (
-                lambda: a * a + b * b - 0.01,
-                lambda: (a - 0.4) ** 2 + (b - 0.4) ** 2 - 0.01,
-            )
-        else:
-            formulas = (
-                lambda: 3 + (a - b) ** 2 / 10 - (a + b) / np.sqrt(2),
-                lambda: a - b + 7 / np.sqrt(2),
-                lambda: 3 + (a - b) ** 2 / 10 + (a + b) / np.sqrt(2),
-                lambda: b - a + 7 / np.sqrt(2),
-            )
+        formulas = self._formulas(x)
         ids = range(len(formulas)) if self.pf is None else [self.pf]
         self.count += len(ids) * x.shape[1]
         return np.vstack([formulas[i]() for i in ids])
