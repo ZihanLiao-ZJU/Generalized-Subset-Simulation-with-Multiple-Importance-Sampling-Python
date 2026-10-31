@@ -18,7 +18,6 @@ Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/Generalized-Su
 - [Outputs](#outputs)
 - [Computational cost](#computational-cost)
 - [Code-to-paper mapping](#code-to-paper-mapping)
-- [Tests](#tests)
 - [Implementation notes](#implementation-notes)
 - [Citation](#citation)
 - [License](#license)
@@ -59,7 +58,6 @@ python -m pip install -r requirements.txt
 ├── SuS.py                    # shared SuS intermediate distribution
 ├── Limit_state_functions/   # Ex1 and Ex2
 ├── Support_Fun/             # CW_aMH, MIS, SedSlt and numerical helpers
-├── tests/
 ├── requirements.txt
 ├── LICENSE
 └── README.md
@@ -172,13 +170,6 @@ The SuS baseline runs each performance function independently and sums the actua
 | Balance-heuristic MIS estimator | `Support_Fun.MIS`, `Support_Fun/WgtMis_Blc.py`, `Support_Fun/MisInt.py` | Combined failure-probability estimator, Eq. (18) |
 | Numerical benchmarks | `Limit_state_functions` | First two numerical examples |
 
-## Tests
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-Tests cover benchmark formulas, strict membership, rounding and quantile conventions, seed allocation, nonfinite log-domain behavior, and joint-call accounting.
 
 ## Implementation notes
 
