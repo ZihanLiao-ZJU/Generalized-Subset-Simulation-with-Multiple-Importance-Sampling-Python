@@ -178,4 +178,4 @@ Algorithm-specific references are included in the source: Li, Ma and Cao (2015) 
 
 ## License
 
-The authors' implementation is provided under the [MIT License](LICENSE). Numerical utility derivatives retain the [Mo Chen BSD notice](LICENSE-Mo-Chen). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The authors' implementation is provided under the [MIT License](LICENSE). The logarithmic helper is translated from Zihan Liao's routines. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
