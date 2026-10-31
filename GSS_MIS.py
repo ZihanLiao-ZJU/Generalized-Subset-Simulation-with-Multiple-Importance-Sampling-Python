@@ -16,6 +16,7 @@ from Support_Fun.Direct import Direct
 
 
 def support(f, g, h):
+    g = g["parameters"] if isinstance(g, dict) else g
     g = np.broadcast_to(np.asarray(g), (f.shape[0],))
     h = np.broadcast_to(np.asarray(h, dtype=bool), (f.shape[0],))
     return np.any((f < g[:, None])[h], axis=0)
@@ -36,10 +37,10 @@ class GSS_MIS:
     """Union intermediate distribution; iteration is owned by SeMCS."""
     def __init__(self, PF):
         self.TF = PF
-        self.Nfun = PF.nfun + 3
-        self.Ndim = 2
+        self.Nfun = getattr(PF, "Nfun", getattr(PF, "nfun", 1)) + 3
+        self.Ndim = PF.Ndim
         self.Ncal = self.X = self.Y = None
-        self.G = np.array(np.inf)
+        self.G = dict(parameters=np.array(np.inf), p=0.1, L=np.eye(self.Ndim))
         self.H = np.array(True)
         self.p = 0.1
         self.Nsam = 1000
@@ -47,7 +48,9 @@ class GSS_MIS:
     def EvlY(self, x):
         obj = copy.copy(self)
         obj.X = x
-        obj.Y = np.vstack((Direct.logpdf(x).sum(axis=0), self.TF.evaluate(x)))
+        physical = self.TF.Rdis.U2X(x) if hasattr(self.TF, "Rdis") else x
+        values = self.TF.EvlLSF(physical) if hasattr(self.TF, "EvlLSF") else self.TF.evaluate(physical)
+        obj.Y = np.vstack((-.5*(self.Ndim*np.log(2*np.pi)+np.sum(x*x,axis=0)), values))
         obj.Ncal = x.shape[1]
         return obj
 
@@ -61,8 +64,8 @@ class GSS_MIS:
         if p is not None:
             self.p = p
         from Support_Fun.numerics import quantile
-        self.G = np.maximum(quantile(y[3:], self.p), 0)
-        self.H = self.H & (self.G > 0)
+        self.G = dict(self.G, parameters=np.maximum(quantile(y[3:], self.p), 0), p=self.p)
+        self.H = self.H & (self.G["parameters"] > 0)
         return y, self.G, self, 0
 
     @property

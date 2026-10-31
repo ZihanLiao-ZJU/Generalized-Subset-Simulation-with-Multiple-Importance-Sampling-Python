@@ -39,7 +39,7 @@ class MIS:
             nf = ys[0].shape[0] - 3
             perlevel = np.zeros((nf, count))
             wm_all = []
-            G = np.vstack([np.broadcast_to(g, (nf,)) for g in run["g"][:count]])
+            G = np.vstack([np.broadcast_to(g["parameters"], (nf,)) for g in run["g"][:count]])
             H = np.vstack([np.broadcast_to(h, (nf,)) for h in run["h"][:count]]).astype(bool)
             for i, y in enumerate(ys):
                 wm = WgtMis_Blc(y, G, H, c, run["Nsam"], i)

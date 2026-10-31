@@ -208,3 +208,45 @@ Algorithm-specific references are included in the source: Li, Ma and Cao (2015) 
 ## License
 
 Licensed under the [MIT License](LICENSE).
+
+
+## Unified MCMC interface
+
+Each standalone toolbox includes `CW_aMH`, `aCS`, `HMC`, and `ES`. The original
+outer algorithm and default sampler remain unchanged; choose the sampler in the
+driver (Python CLI: `--sampler`). Example: `drive_GSS_MIS(1, N=440, repeats=1, sampler_name="aCS")`.
+All four expose `BayStc` and the same call:
+`[u, y, Ncal, BayStc] = SamGen(u_seed, y_seed, Ns)` (Python returns a tuple).
+`SamGen(Nchains, Nsteps)` initializes from the Gaussian reference. Arrays are
+`[Ndim, Nchains, Nsteps]`; packed outputs are `[log_likelihood; log_reference; Y]`.
+Dimension comes from the model, not from the two-dimensional examples.
+
+Distribution state `G` carries model parameters and sampler adaptation. Legacy
+numeric thresholds are stored in `G.parameters` (Python `G["parameters"]`);
+existing named distribution parameters retain their names. aCS uses initial
+`sigma0=1`, `lambda0=0.6`, five adaptation groups, and target acceptance 0.44.
+The final `G.lambda` of one level initializes the next, rather than resetting.
+ES uses the coordinatewise initial-angle `[0, pi]` version, with no stored seed
+at the start of a conditional chain. HMC uses analytic Gaussian rotation in
+Gaussian/Nataf reference coordinates, followed by the likelihood-factor MH test;
+it is not a generic physical-coordinate gradient-HMC implementation. `G.L` or
+`G.L_pi` is the Gaussian reference Cholesky factor, not the covariance matrix.
+HMC's final trajectory time is likewise carried in `G.HMC_time`.
+
+Custom nonnormal physical models must be mapped into Gaussian/Nataf coordinates
+before these kernels are used. Arbitrary dimensional arrays are supported; the
+supplied benchmark formulas retain their documented dimensions. Interface and
+smoke checks do not establish statistical reproduction of every paper result.
+
+
+GSS now samples and stores Gaussian coordinates `u` in every kernel. `Direct.U2X`
+maps these into physical independent marginals before calling the performance
+function; transform returned samples with that method when physical coordinates
+are required. MATLAB accepts its original probability-distribution objects;
+Python `Direct(marginals)` accepts a list of SciPy frozen distributions (for
+example `scipy.stats.norm` and `scipy.stats.lognorm`) as `PF.Rdis`. Set `PF.Ndim`
+and `PF.Nfun` (or Python `nfun`), and provide `EvlLSF` (or Python `evaluate`).
+This is the independent-input Nataf case; no correlated-marginal extension is
+implied. Standard-normal benchmark mappings remain the identity. The shared
+SuS `physical` option selects this `PF.Rdis` mapping; it does not run MCMC in
+untransformed physical space.

@@ -5,6 +5,9 @@ import numpy as np
 from GSS_MIS import GSS_MIS
 from SeMCS import SeMCS
 from Support_Fun.CW_aMH import CW_aMH
+from Support_Fun.aCS import aCS
+from Support_Fun.HMC import HMC
+from Support_Fun.ES import ES
 from Support_Fun.MIS import MIS
 from Limit_state_functions.Ex1 import Ex1
 from Limit_state_functions.Ex2 import Ex2
@@ -12,7 +15,7 @@ from Support_Fun.random import Random
 from Support_Fun.results import summarize
 
 
-def drive_GSS_MIS(example=1, N=None, repeats=100, seed=2026):
+def drive_GSS_MIS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aMH"):
     if isinstance(example, str) and example.startswith("Ex"):
         example = int(example[2:])
     if example not in (1, 2) or repeats < 1:
@@ -24,7 +27,7 @@ def drive_GSS_MIS(example=1, N=None, repeats=100, seed=2026):
     for repetition in range(repeats):
         pf = (Ex1 if example == 1 else Ex2)()
         model = GSS_MIS(pf)
-        sampler = CW_aMH(model, Random(seed + repetition))
+        sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](model, Random(seed + repetition))
         engine = SeMCS(sampler)
         engine.NumSam = N
         engine.MaxIte = 1000
@@ -44,8 +47,9 @@ if __name__ == "__main__":
     parser.add_argument("--repeats", type=int, default=100)
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--output")
+    parser.add_argument("--sampler", choices=["CW_aMH", "aCS", "HMC", "ES"], default="CW_aMH")
     args = parser.parse_args()
-    result = drive_GSS_MIS(args.example, args.samples, args.repeats, args.seed)
+    result = drive_GSS_MIS(args.example, args.samples, args.repeats, args.seed, args.sampler)
     print(json.dumps({k:v for k,v in result.items() if k != "records"}, indent=2))
     if args.output:
         with open(args.output, "w") as f:

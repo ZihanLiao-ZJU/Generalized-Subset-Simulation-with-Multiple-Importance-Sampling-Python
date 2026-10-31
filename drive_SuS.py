@@ -6,6 +6,9 @@ from SuS import SuS
 from SeMCS import SeMCS
 from Support_Fun.ScalarExample import ScalarExample
 from Support_Fun.CW_aMH import CW_aMH
+from Support_Fun.aCS import aCS
+from Support_Fun.HMC import HMC
+from Support_Fun.ES import ES
 from Support_Fun.random import Random
 from Support_Fun.results import summarize
 
@@ -16,12 +19,12 @@ def estimate_pf(result, clip_threshold=True):
     for i, y in enumerate(result["y"]):
         values = np.asarray(y).reshape(np.shape(y)[0], -1, order="F")[3, :]
         threshold = (0 if i == len(result["y"]) - 1 and not clip_threshold
-                     else result["g"][i + 1])
+                     else result["g"][i + 1]["parameters"])
         probability *= np.mean(values < threshold)
     return probability
 
 
-def drive_SuS(example=1, N=None, repeats=100, seed=2026):
+def drive_SuS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aMH"):
     if isinstance(example, str) and example.startswith("Ex"):
         example = int(example[2:])
     if example not in (1, 2) or repeats < 1:
@@ -35,7 +38,7 @@ def drive_SuS(example=1, N=None, repeats=100, seed=2026):
         for component in range(2 * example):
             pf = ScalarExample(example, component)
             model = SuS(pf, "physical", "midpoint", False)
-            sampler = CW_aMH(model, Random(seed + repetition + 10000 * (component + 1)))
+            sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](model, Random(seed + repetition + 10000 * (component + 1)))
             engine = SeMCS(sampler)
             engine.NumSam = N
             engine.MaxIte = 1000
@@ -58,8 +61,9 @@ if __name__ == "__main__":
     parser.add_argument("--repeats", type=int, default=100)
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--output")
+    parser.add_argument("--sampler", choices=["CW_aMH", "aCS", "HMC", "ES"], default="CW_aMH")
     args = parser.parse_args()
-    result = drive_SuS(args.example, args.samples, args.repeats, args.seed)
+    result = drive_SuS(args.example, args.samples, args.repeats, args.seed, args.sampler)
     print(json.dumps({k:v for k,v in result.items() if k != "records"}, indent=2))
     if args.output:
         with open(args.output, "w") as f:

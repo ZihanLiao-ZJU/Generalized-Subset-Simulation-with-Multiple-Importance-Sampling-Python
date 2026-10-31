@@ -11,6 +11,8 @@ import numpy as np
 
 
 class Benchmark:
+    Ndim = 2
+
     def __init__(self, example, pf=None):
         self.example = example
         self.pf = pf

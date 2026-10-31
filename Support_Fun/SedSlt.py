@@ -6,13 +6,21 @@ from GSS_MIS import support, update_y
 def SedSlt(x, y, g, h, N, rng):
     ns = mround(N / np.arange(1, N + 1))
     nseed = mround(N / ns)
-    eligible = np.flatnonzero(support(y[3:], g, h))
+    scalar = np.all(np.isnan(h))
+    eligible = np.flatnonzero(y[3] < g["parameters"] if scalar else support(y[3:], g, h))
     feasible = nseed[nseed <= len(eligible)]
     if not len(feasible):
         return x[:, :0], y[:, :0], np.array([], dtype=int)
     k = int(feasible[-1])
-    chosen = eligible[rng.randperm(len(eligible), k)]
-    return x[:, chosen], update_y(y[:, chosen], g, h), chosen
+    selection = rng.randperm(len(eligible), k) if hasattr(rng, "randperm") else rng.permutation(len(eligible))[:k]
+    chosen = eligible[selection]
+    yy = y[:, chosen].copy()
+    if scalar:
+        yy[0] = np.where(yy[3] < g["parameters"], 0., -np.inf)
+        yy[1] = yy[2]
+    else:
+        yy = update_y(yy, g, h)
+    return x[:, chosen], yy, chosen
 
 
 

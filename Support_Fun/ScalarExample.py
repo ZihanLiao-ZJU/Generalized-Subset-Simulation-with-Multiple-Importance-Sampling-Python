@@ -13,6 +13,8 @@ from Limit_state_functions.Ex2 import Ex2
 class ScalarExample:
     """Evaluate only one selected performance function; Python indices start at zero."""
 
+    Ndim = 2
+
     def __init__(self, example, pf):
         self.example = example
         self.pf = pf
