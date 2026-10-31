@@ -5,7 +5,7 @@ Python implementation of **generalized subset simulation with multiple importanc
 > **Enhanced generalized subset simulation with multiple importance sampling for reliability estimation.**
 > Weili Xia and Zihan Liao. *Computers & Structures*, 313 (2025), 107741. doi: [10.1016/j.compstruc.2025.107741](https://doi.org/10.1016/j.compstruc.2025.107741)
 
-Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/generalized-Subset-Simulation-with-Multiple-Importance-Sampling).
+Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/Generalized-Subset-Simulation-with-Multiple-Importance-Sampling).
 
 ## Contents
 
