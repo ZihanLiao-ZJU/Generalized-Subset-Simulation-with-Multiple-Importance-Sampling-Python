@@ -1,6 +1,6 @@
-# GSS-MIS: Generalized Subset Simulation with Multiple Importance Sampling (Python)
+# GSuS-MIS: Generalized Subset Simulation with Multiple Importance Sampling (Python)
 
-Python implementation of **generalized subset simulation with multiple importance sampling (GSS-MIS)** for estimating small failure probabilities of multiple stochastic responses. This code accompanies the paper:
+Python implementation of **generalized subset simulation with multiple importance sampling (GSuS-MIS)** for estimating small failure probabilities of multiple stochastic responses. This code accompanies the paper:
 
 > **Enhanced generalized subset simulation with multiple importance sampling for reliability estimation.**
 > Weili Xia and Zihan Liao. *Computers & Structures*, 313 (2025), 107741. doi: [10.1016/j.compstruc.2025.107741](https://doi.org/10.1016/j.compstruc.2025.107741)
@@ -24,7 +24,7 @@ Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/Generalized-Su
 
 ## Overview
 
-GSS-MIS estimates the failure probabilities
+GSuS-MIS estimates the failure probabilities
 
 $$p_{f,j}=P\{g_j(\mathbf X)<0\}=\int f_{\mathbf X}(\mathbf x)\,I_{\{g_j(\mathbf x)<0\}}\,\mathrm d\mathbf x$$
 
@@ -51,7 +51,7 @@ python -m pip install -r requirements.txt
 
 ```text
 .
-├── drive_GSS_MIS.py          # GSS-MIS experiment driver
+├── drive_GSS_MIS.py          # GSuS-MIS experiment driver
 ├── drive_SuS.py              # independent scalar SuS experiment driver
 ├── SeMCS.py                  # shared sequential iteration engine
 ├── GSS_MIS.py                # standalone union intermediate distribution
@@ -103,7 +103,7 @@ The random generator is NumPy's `default_rng`. The same integer seed in Python a
 
 The two numerical examples correspond to the first two examples in the paper. Both use independent standard-normal inputs and samples arranged in a `2 × n` array.
 
-| Example | Description | Dimension | Performance functions | GSS-MIS samples/level | SuS samples/level |
+| Example | Description | Dimension | Performance functions | GSuS-MIS samples/level | SuS samples/level |
 |---|---|---|---|---|---|
 | `Ex1` | Two circular failure regions, radius 0.1, centered at `(0, 0)` and `(0.4, 0.4)` | 2 | 2 | 440 | 240 |
 | `Ex2` | Two quadratic and two linear boundaries, in the paper's equation order | 2 | 4 | 410 | 180 |
@@ -112,9 +112,9 @@ Only these two simple numerical examples are included. Integer chain lengths can
 
 ## Using a custom performance function
 
-The supplied Python sampler is specialized to **two independent standard-normal coordinates**. For another problem with that input model:
+The samplers use Gaussian reference coordinates with dimension taken from the model. For a custom problem:
 
-1. Follow `Limit_state_functions/Ex1.py` and its `Benchmark` base class to provide `nfun`, `count`, and an `evaluate(X)` method returning an array of shape `[nfun, nsamples]` for input `[2, nsamples]`.
+1. Follow `Limit_state_functions/Ex1.py` to provide `Ndim`, `nfun`, `count`, and an `evaluate(X)` method returning an array of shape `[nfun, nsamples]` for input `[Ndim, nsamples]`. Set `Rdis = Direct(marginals)` for independent physical marginals that are not standard normal.
 2. Increment `count` by `nfun * nsamples` on every actual evaluation; optionally track `joint_count` by `nsamples` for reporting.
 3. Construct `state = GSS_MIS(model)`, `sampler = CW_aMH(state, Random(seed))`,
    and `engine = SeMCS(sampler)`. Set `engine.NumSam = N` and call
@@ -139,7 +139,7 @@ print(MIS(result).Pf_hat)
 error rather than silently repeating its final size. Optional `G` and `H` lists
 provide predefined intermediate states.
 
-A different input dimension or probability distribution requires an appropriate sampler and prior-density implementation; changing only the performance function does not change the input model.
+For nonnormal independent marginals, `Direct.U2X` maps Gaussian samples into the physical input model before evaluation; see the Gaussian/Nataf interface notes below.
 
 ## Outputs
 
@@ -174,7 +174,7 @@ The SuS baseline runs each performance function independently and sums the actua
 ## Implementation notes
 
 - Coordinate/function arrays use rows for dimensions or performance functions and columns for samples. MCMC arrays use `[Ndim, Nc, Ns]` and column-major flattening; Python indices start at zero.
-- GSS quantiles use NumPy's `hazen` method. Seed standard deviations use `ddof=1`, with zero spread for a single seed. Positive half-integer chain counts are rounded upward.
+- GSuS quantiles use NumPy's `hazen` method. Seed standard deviations use `ddof=1`, with zero spread for a single seed. Positive half-integer chain counts are rounded upward.
 - The component-wise Metropolis scale is fixed within each level. The initial independent sample is retained; subsequent chain steps do not prepend the seeds.
 - Historical proposal supports and realized sample counts are stored in the returned result dictionary and reused by the MIS estimator. Estimation does not mutate the stored function values.
 - The driver accepts command-line options and runs repetitions serially. `--output` saves the complete replicate records as JSON.
@@ -239,7 +239,7 @@ supplied benchmark formulas retain their documented dimensions. Interface and
 smoke checks do not establish statistical reproduction of every paper result.
 
 
-GSS now samples and stores Gaussian coordinates `u` in every kernel. `Direct.U2X`
+GSuS now samples and stores Gaussian coordinates `u` in every kernel. `Direct.U2X`
 maps these into physical independent marginals before calling the performance
 function; transform returned samples with that method when physical coordinates
 are required. MATLAB accepts its original probability-distribution objects;
