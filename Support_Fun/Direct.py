@@ -1,6 +1,8 @@
 """Independent physical marginals and their Gaussian/Nataf coordinate map."""
+
 import numpy as np
 from scipy.special import ndtr
+
 
 class Direct:
     def __init__(self, marginals):
@@ -17,13 +19,13 @@ class Direct:
         for j, marginal in enumerate(self.Marg_X):
             # scipy frozen distributions; exact affine Normal map avoids tail loss.
             if getattr(getattr(marginal, "dist", None), "name", None) == "norm":
-                x[j] = marginal.mean() + marginal.std()*u[j]
+                x[j] = marginal.mean() + marginal.std() * u[j]
             elif getattr(getattr(marginal, "dist", None), "name", None) == "lognorm":
                 args, kw = marginal.args, marginal.kwds
                 shape = kw.get("s", args[0] if args else None)
-                loc = kw.get("loc", args[1] if len(args)>1 else 0.)
-                scale = kw.get("scale", args[2] if len(args)>2 else 1.)
-                x[j] = loc + scale*np.exp(shape*u[j])
+                loc = kw.get("loc", args[1] if len(args) > 1 else 0.0)
+                scale = kw.get("scale", args[2] if len(args) > 2 else 1.0)
+                x[j] = loc + scale * np.exp(shape * u[j])
             else:
                 x[j] = marginal.ppf(ndtr(u[j]))
         return x
@@ -41,7 +43,7 @@ class Direct:
     def logpdf(x):
         # Standard-normal benchmark compatibility, including underflow policy.
         with np.errstate(divide="ignore", under="ignore"):
-            return np.log(np.exp(-0.5*x*x)/np.sqrt(2*np.pi))
+            return np.log(np.exp(-0.5 * x * x) / np.sqrt(2 * np.pi))
 
     @staticmethod
     def sample(rng, n, ndim):

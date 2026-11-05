@@ -1,4 +1,5 @@
 """Run the two GSS-MIS benchmarks using the shared sequential framework."""
+
 import argparse
 import json
 from GSS_MIS import GSS_MIS
@@ -26,16 +27,25 @@ def drive_GSS_MIS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aM
     for repetition in range(repeats):
         pf = (Ex1 if example == 1 else Ex2)()
         model = GSS_MIS(pf)
-        sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](model, Random(seed + repetition))
+        sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](
+            model, Random(seed + repetition)
+        )
         engine = SeMCS(sampler)
         engine.NumSam = N
         engine.MaxIte = 1000
         out = engine.RunIte()
         probability = MIS(out).Pf_hat
         assert pf.joint_count == int(sum(out["Ncal"]))
-        records.append(dict(seed=seed + repetition, probability=probability.tolist(),
-                            joint_calls=int(sum(out["Ncal"])), layer_joint_calls=[out["Ncal"].tolist()],
-                            actual_level_samples=[out["Nsam"].tolist()], completed=out["terminal"]))
+        records.append(
+            dict(
+                seed=seed + repetition,
+                probability=probability.tolist(),
+                joint_calls=int(sum(out["Ncal"])),
+                layer_joint_calls=[out["Ncal"].tolist()],
+                actual_level_samples=[out["Nsam"].tolist()],
+                completed=out["terminal"],
+            )
+        )
     return summarize(example, "GSS-MIS", N, repeats, seed, records)
 
 
@@ -49,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("--sampler", choices=["CW_aMH", "aCS", "HMC", "ES"], default="CW_aMH")
     args = parser.parse_args()
     result = drive_GSS_MIS(args.example, args.samples, args.repeats, args.seed, args.sampler)
-    print(json.dumps({k:v for k,v in result.items() if k != "records"}, indent=2))
+    print(json.dumps({k: v for k, v in result.items() if k != "records"}, indent=2))
     if args.output:
         with open(args.output, "w") as f:
             json.dump(result, f, indent=2)

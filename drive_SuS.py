@@ -38,7 +38,9 @@ def drive_SuS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aMH"):
         for component in range(2 * example):
             pf = ScalarExample(example, component)
             model = SuS(pf, "physical", "midpoint", False)
-            sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](model, Random(seed + repetition + 10000 * (component + 1)))
+            sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](
+                model, Random(seed + repetition + 10000 * (component + 1))
+            )
             engine = SeMCS(sampler)
             engine.NumSam = N
             engine.MaxIte = 1000
@@ -48,9 +50,16 @@ def drive_SuS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aMH"):
             calls.append(out["Ncal"].tolist())
             terminal.append(out["terminal"])
             sizes.append(out["Nsam"].tolist())
-        records.append(dict(seed=seed + repetition, probability=probabilities,
-                            joint_calls=sum(map(sum,calls)), layer_joint_calls=calls,
-                            actual_level_samples=sizes, completed=all(terminal)))
+        records.append(
+            dict(
+                seed=seed + repetition,
+                probability=probabilities,
+                joint_calls=sum(map(sum, calls)),
+                layer_joint_calls=calls,
+                actual_level_samples=sizes,
+                completed=all(terminal),
+            )
+        )
     return summarize(example, "SuS", N, repeats, seed, records)
 
 
