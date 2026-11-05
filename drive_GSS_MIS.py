@@ -1,7 +1,6 @@
 """Run the two GSS-MIS benchmarks using the shared sequential framework."""
 import argparse
 import json
-import numpy as np
 from GSS_MIS import GSS_MIS
 from SeMCS import SeMCS
 from MCMC_samplers.CW_aMH import CW_aMH

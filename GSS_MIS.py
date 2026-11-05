@@ -12,7 +12,6 @@ Arrays store coordinates/functions by row and samples by column.
 
 import copy
 import numpy as np
-from Support_Fun.Direct import Direct
 
 
 def support(f, g, h):

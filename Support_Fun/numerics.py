@@ -8,11 +8,6 @@ Arrays store coordinates/functions by row and samples by column.
 """
 
 import numpy as np
-from .Direct import Direct
-from Operations_on_Logarithmic_values.logsum import logsum
-
-EPS = np.finfo(float).eps
-
 
 def mround(x):
     return np.floor(np.asarray(x) + 0.5).astype(int)
@@ -25,7 +20,3 @@ def mstd(x):
 def quantile(x, p):
     return np.quantile(x, p, axis=1, method="hazen")
 
-
-# Compatibility aliases for existing callers.
-logprior = Direct.logpdf
-source_logsum = logsum
