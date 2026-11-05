@@ -1,93 +1,50 @@
-"""Sequential Monte Carlo driver shared by the reliability toolboxes."""
+"""Common sequential Monte Carlo loop; method policies belong to the model."""
 import copy
-import numpy as np
-from Support_Fun.SedSlt import SedSlt
+
+
+def state_property(name, default=None):
+    """Expose a model parameter stored in its evolving G state."""
+    def get(self): return self.G.get(name, default)
+    def set_(self,value): self.G=dict(getattr(self,"G",{}), **{name:value})
+    return property(get,set_)
+
+
+def prescribed_state(current, specified, *, initial=False):
+    """Apply a prescribed intermediate state without resetting live adaptation."""
+    requested=copy.deepcopy(specified)
+    state=copy.deepcopy(current)
+    state.update(requested)
+    for key in ("p","Nsam"):
+        if key in current: state[key]=copy.deepcopy(current[key])
+    for key in ("lambda","HMC_time"):
+        if initial:
+            if key not in requested: state.pop(key,None)
+        elif key in current: state[key]=copy.deepcopy(current[key])
+    return state
 
 
 class SeMCS:
-    """Iterate sampling, intermediate-state updates and seed selection.
-
-    Sampler.BayStc is the distribution model. NumSam may be a scalar or a
-    per-level vector; G/H optionally specify intermediate parameters.
-    """
-    MaxIte = 10000
-
+    """Execute the same sampling lifecycle for every intermediate model."""
     def __init__(self, Sampler):
-        self.Sampler = Sampler
-        self.IntBay = Sampler.BayStc
-        self.NumSam = self.IntBay.Nsam
-        self.ConPrb = (self.IntBay.G["p"] if isinstance(self.IntBay.G, dict)
-                       else self.IntBay.p)
-        self.G = []
-        self.H = []
-        self.Verbose = False
+        if Sampler is None or Sampler.BayStc is None:
+            raise ValueError("Sampler with BayStc is required")
+        self.Sampler=Sampler
+        self.IntBay=Sampler.BayStc
+        defaults=self.IntBay.run_defaults()
+        self.NumSam=defaults.get("NumSam",getattr(self.IntBay,"Nsam",1000))
+        self.ConPrb=defaults.get("ConPrb",self.IntBay.G.get("p",0.1))
+        self.MaxIte=defaults.get("MaxIte",10000)
+        self.Verbose=defaults.get("Verbose",False)
+        self.G=[]
 
-    def RunIte(self):
-        model = self.IntBay
-        sampler = copy.copy(self.Sampler)
-        counts = np.atleast_1d(self.NumSam).astype(int)
-        if np.any(counts < 1) or self.MaxIte < 2:
-            raise ValueError("NumSam must be positive and MaxIte at least 2")
-        xs, ys, ns, sizes, calls = [], [], [], [], []
-        selected, scales = [], []
-        gs = [copy.deepcopy(self.G[0] if len(self.G) else model.G)]
-        hs = [copy.deepcopy(self.H[0] if len(self.H) else getattr(model, "H", None))]
-        model = copy.copy(model)
-        model.G = (gs[0] if isinstance(gs[0], dict)
-                   else dict(model.G, parameters=gs[0]))
-        gs[0] = copy.deepcopy(model.G)
-        if hs[0] is not None:
-            model.H = hs[0]
-        sampler.BayStc = model
-        nc, steps = int(counts[0]), 1
-        xseed = yseed = None
-        complete = False
-        for level in range(self.MaxIte - 1):
-            if level == 0:
-                x, y, ncal, model = sampler.SamGen(nc, steps)
-            else:
-                x, y, ncal, model = sampler.SamGen(xseed, yseed, steps)
-            x = x.reshape(x.shape[0], -1, order="F")
-            y = y.reshape(y.shape[0], -1, order="F")
-            xs.append(x)
-            ys.append(y)
-            ns.append(nc * steps)
-            sizes.append((nc, steps))
-            calls.append(ncal)
-            scales.append(getattr(sampler, "sigma", None))
-            if level + 1 < len(self.G):
-                model = copy.copy(model)
-                previous_state = model.G
-                specified = copy.deepcopy(self.G[level + 1])
-                model.G = (dict(previous_state, **specified) if isinstance(specified, dict)
-                           else dict(previous_state, parameters=specified))
-                for key in ("lambda", "HMC_time"):
-                    if key in previous_state:
-                        model.G[key] = previous_state[key]
-                if level + 1 < len(self.H):
-                    model.H = self.H[level + 1]
-            else:
-                y, _, model, extra = model.UpdObj(x, y, self.ConPrb)
-                ys[-1] = y
-                calls[-1] += extra
-            sampler.BayStc = model
-            gs.append(copy.deepcopy(model.G))
-            hs.append(copy.deepcopy(getattr(model, "H", None)))
-            if counts.size > 1 and level + 1 >= counts.size:
-                raise ValueError("NumSam schedule exhausted before seed selection")
-            target = int(counts[0] if counts.size == 1 else counts[level + 1])
-            xseed, yseed, indices = SedSlt(x, y, model.G, model.H, target, sampler.rng)
-            selected.append(indices)
-            nc = xseed.shape[1]
-            steps = int(np.floor(target / nc + 0.5)) if nc else 0
-            if self.Verbose:
-                print(f"level {level + 1}: samples={ns[-1]}, evaluations={calls[-1]}")
-            if nc <= 0 or level + 2 == self.MaxIte:
-                break
-            if model.FlgCvg:
-                complete = True
-                break
-        return dict(x=xs, y=ys, g=gs, h=hs, Nsam=np.asarray(ns),
-                    Nsze=np.asarray(sizes), Ncal=np.asarray(calls),
-                    selected=selected, sigma=scales, flg_cvg=complete,
-                    terminal=bool(model.FlgCvg), Nite=len(xs), intBay=model)
+    def RunIte(self, rng=None):
+        sampler=copy.copy(self.Sampler)
+        if rng is not None: sampler.rng=rng
+        context=self.IntBay.start_run(self,sampler)
+        for level in range(context["limit"]):
+            record=context["model"].sample_level(context,level)
+            context["model"].advance_level(context,record,level)
+            if context["model"].run_complete(context,record,"before_seeds"): break
+            context["model"].select_run_seeds(context,record,level)
+            if context["model"].run_complete(context,record,"after_seeds"): break
+        return context["model"].finish_run(context)

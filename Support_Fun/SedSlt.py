@@ -3,7 +3,8 @@ import numpy as np
 from .numerics import mround
 from GSS_MIS import support, update_y
 
-def SedSlt(x, y, g, h, N, rng):
+def SedSlt(x, y, g, N, rng):
+    h = g["active"]
     ns = mround(N / np.arange(1, N + 1))
     nseed = mround(N / ns)
     scalar = np.all(np.isnan(h))

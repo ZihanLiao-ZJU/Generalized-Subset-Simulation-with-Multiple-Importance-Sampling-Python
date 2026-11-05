@@ -27,7 +27,7 @@ class MIS:
         with np.errstate(invalid="ignore", divide="ignore", over="ignore"):
             for i in range(count - 1):
                 weights = (
-                    likelihood(ys[i][3:], run["g"][i + 1], run["h"][i + 1])
+                    likelihood(ys[i][3:], run["g"][i + 1], run["g"][i + 1]["active"])
                     + ys[i][2]
                     - ys[i][0]
                     - ys[i][1]
@@ -40,7 +40,7 @@ class MIS:
             perlevel = np.zeros((nf, count))
             wm_all = []
             G = np.vstack([np.broadcast_to(g["parameters"], (nf,)) for g in run["g"][:count]])
-            H = np.vstack([np.broadcast_to(h, (nf,)) for h in run["h"][:count]]).astype(bool)
+            H = np.vstack([np.broadcast_to(h, (nf,)) for h in [g["active"] for g in run["g"][:count]]]).astype(bool)
             for i, y in enumerate(ys):
                 wm = WgtMis_Blc(y, G, H, c, run["Nsam"], i)
                 wm_all.append(wm)
