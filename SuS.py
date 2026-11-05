@@ -116,32 +116,13 @@ class SuS:
             complete=False,
         )
 
-    def sample_level(self, context, level):
-        if level == 0:
-            x, y, ncal, model = context["sampler"].SamGen(context["nc"], context["steps"])
-        else:
-            x, y, ncal, model = context["sampler"].SamGen(
-                context["xseed"], context["yseed"], context["steps"]
-            )
-        x = x.reshape(x.shape[0], -1, order="F")
-        y = y.reshape(y.shape[0], -1, order="F")
-        context["model"] = model
-        record = dict(
-            x=x,
-            y=y,
-            calls=ncal,
-            count=context["nc"] * context["steps"],
-            shape=(context["nc"], context["steps"]),
-        )
-        context["x"].append(x)
-        context["y"].append(y)
-        context["Nsam"].append(record["count"])
-        context["Nsze"].append(record["shape"])
-        context["Ncal"].append(ncal)
-        context["sigma"].append(getattr(context["sampler"], "sigma", None))
-        return record
-
     def advance_level(self, context, record, level):
+        record["x"] = record["x"].reshape(record["x"].shape[0], -1, order="F")
+        record["y"] = record["y"].reshape(record["y"].shape[0], -1, order="F")
+        context["x"][-1] = record["x"]
+        context["y"][-1] = record["y"]
+        context["sigma"].append(getattr(context["sampler"], "sigma", None))
+
         model = context["model"]
         if level + 1 < len(context["owner"].G):
             model = copy.copy(model)
