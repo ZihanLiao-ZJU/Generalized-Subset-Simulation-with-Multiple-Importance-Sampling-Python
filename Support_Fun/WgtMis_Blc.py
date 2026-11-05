@@ -5,7 +5,7 @@ https://doi.org/10.1016/j.compstruc.2025.107741
 """
 
 import numpy as np
-from .Operations_on_Logarithmic_values.logsum import logsum
+from Operations_on_Logarithmic_values.logsum import logsum
 
 
 def WgtMis_Blc(y, G, H, c, nsam, level):

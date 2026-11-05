@@ -50,17 +50,41 @@ python -m pip install -r requirements.txt
 ## Repository structure
 
 ```text
-.
-├── drive_GSS_MIS.py          # GSuS-MIS experiment driver
-├── drive_SuS.py              # independent scalar SuS experiment driver
-├── SeMCS.py                  # shared sequential iteration engine
-├── GSS_MIS.py                # standalone union intermediate distribution
-├── SuS.py                    # shared SuS intermediate distribution
-├── Limit_state_functions/   # Ex1 and Ex2
-├── Support_Fun/             # CW_aMH, MIS, SedSlt and numerical helpers
-├── requirements.txt
+├── GSS_MIS.py
 ├── LICENSE
-└── README.md
+├── Limit_state_functions/
+│   ├── Ex1.py
+│   ├── Ex2.py
+│   ├── __init__.py
+│   └── benchmark.py
+├── MCMC_samplers/
+│   ├── CW_aMH.py
+│   ├── ES.py
+│   ├── HMC.py
+│   ├── MCMCBase.py
+│   ├── __init__.py
+│   └── aCS.py
+├── Operations_on_Logarithmic_values/
+│   ├── __init__.py
+│   ├── logmean.py
+│   └── logsum.py
+├── README.md
+├── SeMCS.py
+├── SuS.py
+├── Support_Fun/
+│   ├── Direct.py
+│   ├── MIS.py
+│   ├── MisInt.py
+│   ├── ScalarExample.py
+│   ├── SedSlt.py
+│   ├── WgtMis_Blc.py
+│   ├── __init__.py
+│   ├── numerics.py
+│   ├── random.py
+│   └── results.py
+├── drive_GSS_MIS.py
+├── drive_SuS.py
+└── requirements.txt
 ```
 
 `SeMCS` and `SuS` are shared with the SeMIS reliability Python toolbox.
@@ -123,7 +147,7 @@ The samplers use Gaussian reference coordinates with dimension taken from the mo
 ```python
 from GSS_MIS import GSS_MIS
 from SeMCS import SeMCS
-from Support_Fun.CW_aMH import CW_aMH
+from MCMC_samplers.CW_aMH import CW_aMH
 from Support_Fun.MIS import MIS
 from Support_Fun.random import Random
 from Limit_state_functions.Ex1 import Ex1
@@ -165,7 +189,7 @@ The SuS baseline runs each performance function independently and sums the actua
 | Step | Code | Paper component |
 |---|---|---|
 | Intermediate union events | `GSS_MIS.UpdObj`, `SeMCS.RunIte` | Generalized subset-simulation construction |
-| Component-wise Metropolis sampling | `Support_Fun/CW_aMH.sample_cw` | Conditional sampling within intermediate events |
+| Component-wise Metropolis sampling | `MCMC_samplers.CW_aMH.CW_aMH.SamGen` | Conditional sampling within intermediate events |
 | Recursive normalizing constants | `Support_Fun.MIS` | Intermediate importance-distribution normalization |
 | Balance-heuristic MIS estimator | `Support_Fun.MIS`, `Support_Fun/WgtMis_Blc.py`, `Support_Fun/MisInt.py` | Combined failure-probability estimator, Eq. (18) |
 | Numerical benchmarks | `Limit_state_functions` | First two numerical examples |
@@ -235,8 +259,7 @@ HMC's final trajectory time is likewise carried in `G.HMC_time`.
 
 Custom nonnormal physical models must be mapped into Gaussian/Nataf coordinates
 before these kernels are used. Arbitrary dimensional arrays are supported; the
-supplied benchmark formulas retain their documented dimensions. Interface and
-smoke checks do not establish statistical reproduction of every paper result.
+supplied benchmark formulas retain their documented dimensions.
 
 
 GSuS now samples and stores Gaussian coordinates `u` in every kernel. `Direct.U2X`

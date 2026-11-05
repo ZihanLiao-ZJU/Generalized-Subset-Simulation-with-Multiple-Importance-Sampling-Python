@@ -9,7 +9,7 @@ Arrays store coordinates/functions by row and samples by column.
 
 import numpy as np
 from .Direct import Direct
-from .Operations_on_Logarithmic_values.logsum import logsum
+from Operations_on_Logarithmic_values.logsum import logsum
 
 EPS = np.finfo(float).eps
 

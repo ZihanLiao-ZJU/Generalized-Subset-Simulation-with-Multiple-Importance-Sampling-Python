@@ -4,7 +4,7 @@ Xia and Liao (2025), Computers & Structures 313, 107741.
 https://doi.org/10.1016/j.compstruc.2025.107741
 """
 
-from .Operations_on_Logarithmic_values.logmean import logmean
+from Operations_on_Logarithmic_values.logmean import logmean
 
 
 def MisInt(log_alpha, log_W):

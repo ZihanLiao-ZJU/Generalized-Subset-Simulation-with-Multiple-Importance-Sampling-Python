@@ -4,10 +4,10 @@ import json
 import numpy as np
 from GSS_MIS import GSS_MIS
 from SeMCS import SeMCS
-from Support_Fun.CW_aMH import CW_aMH
-from Support_Fun.aCS import aCS
-from Support_Fun.HMC import HMC
-from Support_Fun.ES import ES
+from MCMC_samplers.CW_aMH import CW_aMH
+from MCMC_samplers.aCS import aCS
+from MCMC_samplers.HMC import HMC
+from MCMC_samplers.ES import ES
 from Support_Fun.MIS import MIS
 from Limit_state_functions.Ex1 import Ex1
 from Limit_state_functions.Ex2 import Ex2

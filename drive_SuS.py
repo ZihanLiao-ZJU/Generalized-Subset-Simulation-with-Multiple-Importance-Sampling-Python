@@ -5,10 +5,10 @@ import numpy as np
 from SuS import SuS
 from SeMCS import SeMCS
 from Support_Fun.ScalarExample import ScalarExample
-from Support_Fun.CW_aMH import CW_aMH
-from Support_Fun.aCS import aCS
-from Support_Fun.HMC import HMC
-from Support_Fun.ES import ES
+from MCMC_samplers.CW_aMH import CW_aMH
+from MCMC_samplers.aCS import aCS
+from MCMC_samplers.HMC import HMC
+from MCMC_samplers.ES import ES
 from Support_Fun.random import Random
 from Support_Fun.results import summarize
 

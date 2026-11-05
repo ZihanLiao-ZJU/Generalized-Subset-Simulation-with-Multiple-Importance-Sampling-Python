@@ -11,7 +11,7 @@ Arrays store coordinates/functions by row and samples by column.
 """
 
 import numpy as np
-from Support_Fun.Operations_on_Logarithmic_values.logsum import logsum
+from Operations_on_Logarithmic_values.logsum import logsum
 from Support_Fun.WgtMis_Blc import WgtMis_Blc
 from Support_Fun.MisInt import MisInt
 from GSS_MIS import likelihood
