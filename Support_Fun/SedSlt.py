@@ -1,9 +1,10 @@
 """Select eligible seeds with the original chain-size and random-order rules."""
 import numpy as np
 from .numerics import mround
-from GSS_MIS import support, update_y
 
 def SedSlt(x, y, g, N, rng):
+    from GSS_MIS import support, update_y
+
     h = g["active"]
     ns = mround(N / np.arange(1, N + 1))
     nseed = mround(N / ns)
