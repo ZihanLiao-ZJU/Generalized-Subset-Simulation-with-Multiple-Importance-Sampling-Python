@@ -2,9 +2,26 @@
 import numpy as np
 from .numerics import mround
 
-def SedSlt(x, y, g, N, rng):
-    from GSS_MIS import support, update_y
 
+def support(f, g, h):
+    g = g["parameters"] if isinstance(g, dict) else g
+    g = np.broadcast_to(np.asarray(g), (f.shape[0],))
+    h = np.broadcast_to(np.asarray(h, dtype=bool), (f.shape[0],))
+    return np.any((f < g[:, None])[h], axis=0)
+
+
+def likelihood(f, g, h):
+    return np.where(support(f, g, h), 0.0, -np.inf)
+
+
+def update_y(y, g, h):
+    yy = y.copy()
+    yy[0] = likelihood(yy[3:], g, h)
+    yy[1] = yy[2]
+    return yy
+
+
+def SedSlt(x, y, g, N, rng):
     h = g["active"]
     ns = mround(N / np.arange(1, N + 1))
     nseed = mround(N / ns)
@@ -23,6 +40,3 @@ def SedSlt(x, y, g, N, rng):
     else:
         yy = update_y(yy, g, h)
     return x[:, chosen], yy, chosen
-
-
-

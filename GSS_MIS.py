@@ -12,31 +12,20 @@ Arrays store coordinates/functions by row and samples by column.
 
 import copy
 import numpy as np
-
-
-def support(f, g, h):
-    g = g["parameters"] if isinstance(g, dict) else g
-    g = np.broadcast_to(np.asarray(g), (f.shape[0],))
-    h = np.broadcast_to(np.asarray(h, dtype=bool), (f.shape[0],))
-    return np.any((f < g[:, None])[h], axis=0)
-
-
-def likelihood(f, g, h):
-    return np.where(support(f, g, h), 0.0, -np.inf)
-
-
-def update_y(y, g, h):
-    yy = y.copy()
-    yy[0] = likelihood(yy[3:], g, h)
-    yy[1] = yy[2]
-    return yy
-
-
-from Support_Fun.SedSlt import SedSlt
+from Support_Fun.SedSlt import SedSlt, support, likelihood, update_y
 
 
 class GSS_MIS:
     """Union intermediate distribution; iteration is owned by SeMCS."""
+
+    @property
+    def p(self):
+        return self.G["p"]
+
+    @p.setter
+    def p(self, value):
+        self.G = dict(self.G, p=value)
+
     def __init__(self, PF):
         self.TF = PF
         self.Nfun = getattr(PF, "Nfun", getattr(PF, "nfun", 1)) + 3
@@ -77,4 +66,3 @@ class GSS_MIS:
     RunOptions = dict(
         PresetMode="replace", Layout="flat", SeedInputs="state_rng", SeedFunction=SedSlt,
     )
-
