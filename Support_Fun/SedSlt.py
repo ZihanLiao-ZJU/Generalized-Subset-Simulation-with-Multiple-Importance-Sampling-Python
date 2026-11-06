@@ -21,7 +21,11 @@ def update_y(y, g, h):
     return yy
 
 
-def SedSlt(x, y, g, N, rng):
+def SedSlt(model, x, y, N, rng=None):
+    g = model.G
+    rng = np.random if rng is None else rng
+    x = x.reshape(x.shape[0], -1, order="F")
+    y = y.reshape(y.shape[0], -1, order="F")
     h = g["active"]
     ns = mround(N / np.arange(1, N + 1))
     nseed = mround(N / ns)
@@ -29,7 +33,7 @@ def SedSlt(x, y, g, N, rng):
     eligible = np.flatnonzero(y[3] < g["parameters"] if scalar else support(y[3:], g, h))
     feasible = nseed[nseed <= len(eligible)]
     if not len(feasible):
-        return x[:, :0], y[:, :0], np.array([], dtype=int)
+        return x[:, :0], y[:, :0]
     k = int(feasible[-1])
     selection = rng.randperm(len(eligible), k) if hasattr(rng, "randperm") else rng.permutation(len(eligible))[:k]
     chosen = eligible[selection]
@@ -39,4 +43,4 @@ def SedSlt(x, y, g, N, rng):
         yy[1] = yy[2]
     else:
         yy = update_y(yy, g, h)
-    return x[:, chosen], yy, chosen
+    return x[:, chosen], yy

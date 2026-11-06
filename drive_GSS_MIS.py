@@ -43,7 +43,7 @@ def drive_GSS_MIS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aM
                 joint_calls=int(sum(out["Ncal"])),
                 layer_joint_calls=[out["Ncal"].tolist()],
                 actual_level_samples=[out["Nsam"].tolist()],
-                completed=out["terminal"],
+                completed=out["flg_cvg"],
             )
         )
     return summarize(example, "GSS-MIS", N, repeats, seed, records)

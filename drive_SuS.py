@@ -48,7 +48,7 @@ def drive_SuS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aMH"):
             probabilities.append(float(estimate_pf(out, model.clip_threshold)))
             assert pf.joint_count == int(sum(out["Ncal"]))
             calls.append(out["Ncal"].tolist())
-            terminal.append(out["terminal"])
+            terminal.append(out["flg_cvg"])
             sizes.append(out["Nsam"].tolist())
         records.append(
             dict(

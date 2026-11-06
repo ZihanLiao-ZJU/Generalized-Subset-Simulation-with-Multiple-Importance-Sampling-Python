@@ -102,6 +102,8 @@ where needed. Example and logarithmic helper implementations have matching MATLA
 
 ## Quick start
 
+Set `MaxIte` to the maximum number of sampled levels. A scalar `NumSam` is reused; a vector is a finite per-level budget. The run returns when either limit is reached, and `flg_cvg` reports the method's own convergence criterion. Entries in `G` patch intermediate states; omitted fields and carried `lambda`/`HMC_time` are retained.
+
 Run the driver from the repository root:
 
 ```bash
@@ -161,13 +163,13 @@ result = engine.RunIte()
 print(MIS(result).Pf_hat)
 ```
 
-`NumSam` can also be a per-level vector; an exhausted finite schedule raises an
-error rather than silently repeating its final size. Optional `G` and `H` lists
-provide predefined intermediate states.
+Optional `G` entries provide patches for predefined intermediate states.
 
 For nonnormal independent marginals, `Direct.U2X` maps Gaussian samples into the physical input model before evaluation; see the Gaussian/Nataf interface notes below.
 
 ## Outputs
+
+The raw sampling history `g` contains `Nite` sampled states followed by one final candidate state. `Nsze` records the chain and step counts at each sampled level.
 
 | Output | Meaning |
 |---|---|

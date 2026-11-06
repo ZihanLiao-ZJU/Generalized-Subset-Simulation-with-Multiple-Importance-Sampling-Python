@@ -23,7 +23,7 @@ class MIS:
     def __init__(self, run):
         count = len(run["y"])
         c = np.zeros(count)
-        ys = [y.copy() for y in run["y"]]
+        ys = [y.reshape(y.shape[0], -1, order="F").copy() for y in run["y"]]
         with np.errstate(invalid="ignore", divide="ignore", over="ignore"):
             for i in range(count - 1):
                 weights = (

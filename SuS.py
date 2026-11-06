@@ -93,6 +93,4 @@ class SuS:
     def FlgCvg(self):
         return bool(self.G["parameters"] <= 0)
 
-    RunOptions = dict(
-        PresetMode="replace", Layout="flat", SeedInputs="state_rng", SeedFunction=SedSlt,
-    )
+    SedSlt = SedSlt

@@ -55,7 +55,7 @@ class GSS_MIS:
         if p is not None:
             self.p = p
         from Support_Fun.numerics import quantile
-        self.G = dict(self.G, parameters=np.maximum(quantile(y[3:], self.p), 0), p=self.p)
+        self.G = dict(self.G, parameters=np.maximum(quantile(y.reshape(y.shape[0], -1, order="F")[3:], self.p), 0), p=self.p)
         self.G["active"] = self.G["active"] & (self.G["parameters"] > 0)
         return y, self.G, self, 0
 
@@ -63,6 +63,4 @@ class GSS_MIS:
     def FlgCvg(self):
         return not np.any(self.G["active"])
 
-    RunOptions = dict(
-        PresetMode="replace", Layout="flat", SeedInputs="state_rng", SeedFunction=SedSlt,
-    )
+    SedSlt = SedSlt
