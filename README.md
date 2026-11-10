@@ -2,8 +2,7 @@
 
 Python implementation of **generalized subset simulation with multiple importance sampling (GSuS-MIS)** for estimating small failure probabilities of multiple stochastic responses. This code accompanies the paper:
 
-> **Enhanced generalized subset simulation with multiple importance sampling for reliability estimation.**
-> Weili Xia and Zihan Liao. *Computers & Structures*, 313 (2025), 107741. doi: [10.1016/j.compstruc.2025.107741](https://doi.org/10.1016/j.compstruc.2025.107741)
+> Xia, W., & Liao, Z. (2025). Enhanced generalized subset simulation with multiple importance sampling for reliability estimation. *Computers & Structures, 313*, Article 107741. [https://doi.org/10.1016/j.compstruc.2025.107741](https://doi.org/10.1016/j.compstruc.2025.107741)
 
 Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/Generalized-Subset-Simulation-with-Multiple-Importance-Sampling).
 
@@ -256,9 +255,9 @@ The classical product estimator is computed in `drive_SuS`, not in the distribut
 
 ## Citation
 
-If you use this code in your research, please cite:
+If you use this toolbox in your research, please cite:
 
-> Xia, W., & Liao, Z. (2025). Enhanced generalized subset simulation with multiple importance sampling for reliability estimation. *Computers & Structures*, 313, 107741. https://doi.org/10.1016/j.compstruc.2025.107741
+> Xia, W., & Liao, Z. (2025). Enhanced generalized subset simulation with multiple importance sampling for reliability estimation. *Computers & Structures, 313*, Article 107741. [https://doi.org/10.1016/j.compstruc.2025.107741](https://doi.org/10.1016/j.compstruc.2025.107741)
 
 ```bibtex
 @article{xia2025enhanced,
