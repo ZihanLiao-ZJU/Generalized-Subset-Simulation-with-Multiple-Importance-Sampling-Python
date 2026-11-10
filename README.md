@@ -143,30 +143,26 @@ where needed. Example and logarithmic helper implementations have matching MATLA
 
 ## Quick start
 
-Set `MaxIte` to the maximum number of sampled levels. A scalar `NumSam` is reused; a vector is a finite per-level budget. The run returns when either limit is reached, and `flg_cvg` reports the method's own convergence criterion. Entries in `G` patch intermediate states; omitted fields and carried `lambda`/`HMC_time` are retained.
-
-Run the driver from the repository root:
+Run one Example 1 simulation from the repository root, using 440 samples per level and the `CW_aMH` sampler:
 
 ```bash
-python drive_GSS_MIS.py
+python drive_GSS_MIS.py --example 1 --samples 440 --sampler CW_aMH --repeats 1
 ```
 
-By default this runs Example 1 with 100 independent repetitions and seed 2026. To select Example 2, save complete replicate results, or run SuS:
+Change `--example`, `--samples` and `--sampler` to select the problem, scalar sample size and MCMC sampler. `--repeats` controls independent runs; `--seed` fixes the random seed and `--output results.json` saves the full results. The SuS driver accepts the same options:
 
 ```bash
-python drive_GSS_MIS.py --example 2 --repeats 100 --output results_ex2.json
-python drive_SuS.py --example 2 --repeats 100
+python drive_SuS.py --example 2 --samples 410 --sampler CW_aMH --repeats 1
 ```
 
-The driver can also be called from Python:
+The GSS-MIS driver can also be called from Python:
 
 ```python
 from drive_GSS_MIS import drive_GSS_MIS
-result = drive_GSS_MIS(example=1, N=440, repeats=100, seed=2026)
-print(result["mean"], result["cov"], result["mean_joint_calls"])
-```
 
-The random generator is NumPy's `default_rng`. The same integer seed in Python and MATLAB does not imply identical random trajectories.
+result = drive_GSS_MIS(example=1, N=440, repeats=1, sampler_name="CW_aMH")
+print(result["mean"], result["mean_joint_calls"])
+```
 
 ## Built-in examples
 
@@ -240,6 +236,8 @@ The SuS baseline runs each performance function independently and sums the actua
 | Numerical benchmarks | `Limit_state_functions` | First two numerical examples |
 
 ## Implementation notes
+
+The random generator is NumPy's `default_rng`. The same integer seed in Python and MATLAB does not imply identical random trajectories.
 
 - Coordinate/function arrays use rows for dimensions or performance functions and columns for samples. MCMC arrays use `[Ndim, Nc, Ns]` and column-major flattening; Python indices start at zero.
 - GSuS quantiles use NumPy's `hazen` method. Seed standard deviations use `ddof=1`, with zero spread for a single seed. Positive half-integer chain counts are rounded upward.
