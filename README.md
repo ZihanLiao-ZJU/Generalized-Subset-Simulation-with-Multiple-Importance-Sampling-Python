@@ -9,7 +9,6 @@ Related implementation: [MATLAB](https://github.com/ZihanLiao-ZJU/Generalized-Su
 ## Contents
 
 - [Overview](#overview)
-- [Unified MCMC interface](#unified-mcmc-interface)
 - [Requirements](#requirements)
 - [Repository structure](#repository-structure)
 - [Quick start](#quick-start)
@@ -36,46 +35,6 @@ by constructing a sequence of intermediate union events:
 
 Intermediate membership is strictly `g < threshold`, and final failure is strictly `g < 0`. The conditional quantile probability is `p = 0.1`; MIS calculations use logarithmic weights for numerical stability.
 
-## Unified MCMC interface
-
-Each standalone toolbox includes `CW_aMH`, `aCS`, `HMC`, and `ES`. The original
-outer algorithm and default sampler remain unchanged; choose the sampler in the
-driver (Python CLI: `--sampler`). Example: `drive_GSS_MIS(1, N=440, repeats=1, sampler_name="aCS")`.
-All four expose `BayStc` and the same call:
-`[u, y, Ncal, BayStc] = SamGen(u_seed, y_seed, Ns)` (Python returns a tuple).
-`SamGen(Nchains, Nsteps)` initializes from the Gaussian reference. Arrays are
-`[Ndim, Nchains, Nsteps]`; packed outputs are `[log_likelihood; log_reference; Y]`.
-Dimension comes from the model, not from the two-dimensional examples.
-
-Distribution state `G` carries model parameters and sampler adaptation. Legacy
-numeric thresholds are stored in `G.parameters` (Python `G["parameters"]`);
-existing named distribution parameters retain their names. aCS uses initial
-`sigma0=1`, `lambda0=0.6`, five adaptation groups, and target acceptance 0.44.
-The final `G.lambda` of one level initializes the next, rather than resetting.
-ES uses the coordinatewise initial-angle `[0, pi]` version, with no stored seed
-at the start of a conditional chain. HMC uses analytic Gaussian rotation in
-Gaussian/Nataf reference coordinates, followed by the likelihood-factor MH test;
-it is not a generic physical-coordinate gradient-HMC implementation. `G.L` or
-`G.L_pi` is the Gaussian reference Cholesky factor, not the covariance matrix.
-HMC's final trajectory time is likewise carried in `G.HMC_time`.
-
-Custom nonnormal physical models must be mapped into Gaussian/Nataf coordinates
-before these kernels are used. Arbitrary dimensional arrays are supported; the
-supplied benchmark formulas retain their documented dimensions.
-
-
-GSuS now samples and stores Gaussian coordinates `u` in every kernel. `Direct.U2X`
-maps these into physical independent marginals before calling the performance
-function; transform returned samples with that method when physical coordinates
-are required. MATLAB accepts its original probability-distribution objects;
-Python `Direct(marginals)` accepts a list of SciPy frozen distributions (for
-example `scipy.stats.norm` and `scipy.stats.lognorm`) as `PF.Rdis`. Set `PF.Ndim`
-and `PF.Nfun` (or Python `nfun`), and provide `EvlLSF` (or Python `evaluate`).
-This is the independent-input Nataf case; no correlated-marginal extension is
-implied. Standard-normal benchmark mappings remain the identity. The shared
-SuS `physical` option selects this `PF.Rdis` mapping; it does not run MCMC in
-untransformed physical space.
-
 ## Requirements
 
 - Python 3.10 or later.
@@ -88,8 +47,6 @@ python -m pip install -r requirements.txt
 ```
 
 ## Repository structure
-
-Every toolbox includes the same `SeMCS(sampler).RunIte()` loop. Method classes own initialization, intermediate updates, seed selection and convergence. Fixed MCMC options are sampler attributes; evolving proposal scales and trajectory times are stored in the model's `G`. Each repository runs independently.
 
 ```text
 .
@@ -129,17 +86,6 @@ Every toolbox includes the same `SeMCS(sampler).RunIte()` loop. Method classes o
 ├── drive_SuS.py
 └── requirements.txt
 ```
-
-`SeMCS` and `SuS` are shared with the SeMIS reliability Python toolbox.
-The distribution classes define intermediate states and convergence, samplers
-generate and select samples, `SeMCS.RunIte()` owns iteration, and the drivers
-run repetitions and estimate probabilities. `Support_Fun/MIS.py` is a separate
-postprocessor.
-
-Both toolboxes use `SeMCS(sampler)` with the model stored in `sampler.BayStc`.
-The drivers share `(example, N, repeats, seed)` and return summary dictionaries
-with per-run `records`. Python's package and numerical helpers are retained only
-where needed. Example and logarithmic helper implementations have matching MATLAB names.
 
 ## Quick start
 
@@ -200,9 +146,7 @@ result = engine.RunIte()
 print(MIS(result).Pf_hat)
 ```
 
-Optional `G` entries provide patches for predefined intermediate states.
-
-For nonnormal independent marginals, `Direct.U2X` maps Gaussian samples into the physical input model before evaluation; see the Gaussian/Nataf interface notes below.
+`Direct(marginals)` accepts a list of SciPy frozen distributions for independent inputs. The performance function receives physical coordinates. Returned samples are stored in Gaussian coordinates; use `model.Rdis.U2X(u)` to obtain physical samples. The built-in standard-normal examples use the identity mapping.
 
 ## Outputs
 
@@ -244,12 +188,6 @@ The random generator is NumPy's `default_rng`. The same integer seed in Python a
 - The component-wise Metropolis scale is fixed within each level. The initial independent sample is retained; subsequent chain steps do not prepend the seeds.
 - Historical proposal supports and realized sample counts are stored in the returned result dictionary and reused by the MIS estimator. Estimation does not mutate the stored function values.
 - The driver accepts command-line options and runs repetitions serially. `--output` saves the complete replicate records as JSON.
-
-The shared `SuS` class takes explicit coordinate, threshold, and clipping options.
-`drive_SuS.py` uses `SuS(PF, "physical", "midpoint", False)` here; the SeMIS
-reliability driver uses `SuS(PF, "standard_normal", "hazen", True)`. These retain
-each benchmark's sampling convention without hidden repository-specific behavior.
-The classical product estimator is computed in `drive_SuS`, not in the distribution class.
 
 ## Citation
 
