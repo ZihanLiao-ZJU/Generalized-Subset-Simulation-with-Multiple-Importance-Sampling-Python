@@ -1,6 +1,5 @@
-"""Run the two GSS-MIS benchmarks using the shared sequential framework."""
+"""Edit the settings below, then run this script from the repository root."""
 
-import argparse
 import json
 from GSS_MIS import GSS_MIS
 from SeMCS import SeMCS
@@ -15,51 +14,35 @@ from Support_Fun.random import Random
 from Support_Fun.results import summarize
 
 
-def drive_GSS_MIS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aMH"):
-    if isinstance(example, str) and example.startswith("Ex"):
-        example = int(example[2:])
-    if example not in (1, 2) or repeats < 1:
-        raise ValueError("Choose example 1 or 2 and positive repeats")
-    N = (440, 410)[example - 1] if N is None else N
-    if N < 20:
-        raise ValueError("N must be at least 20")
-    records = []
-    for repetition in range(repeats):
-        pf = (Ex1 if example == 1 else Ex2)()
-        model = GSS_MIS(pf)
-        sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](
-            model, Random(seed + repetition)
-        )
-        engine = SeMCS(sampler)
-        engine.NumSam = N
-        engine.MaxIte = 1000
-        out = engine.RunIte()
-        probability = MIS(out).Pf_hat
-        assert pf.joint_count == int(sum(out["Ncal"]))
-        records.append(
-            dict(
-                seed=seed + repetition,
-                probability=probability.tolist(),
-                joint_calls=int(sum(out["Ncal"])),
-                layer_joint_calls=[out["Ncal"].tolist()],
-                actual_level_samples=[out["Nsam"].tolist()],
-                completed=out["flg_cvg"],
-            )
-        )
-    return summarize(example, "GSS-MIS", N, repeats, seed, records)
+# %% Problem and sampling settings
+example = 1
+N = 440                     # Constant samples per level
+Nrun = 100                  # Set to 1 for a single run
+SamplerClass = CW_aMH       # CW_aMH, aCS, HMC or ES
 
+# %% Run simulations
+if example not in (1, 2) or N < 20 or Nrun < 1:
+    raise ValueError("Choose example 1 or 2, N >= 20 and Nrun >= 1")
+records = []
+for repetition in range(Nrun):
+    pf = (Ex1 if example == 1 else Ex2)()
+    model = GSS_MIS(pf)
+    sampler = SamplerClass(model, Random(None))
+    engine = SeMCS(sampler)
+    engine.NumSam = N
+    engine.MaxIte = 1000
+    out = engine.RunIte()
+    probability = MIS(out).Pf_hat
+    assert pf.joint_count == int(sum(out["Ncal"]))
+    records.append(
+        dict(
+            probability=probability.tolist(),
+            joint_calls=int(sum(out["Ncal"])),
+            layer_joint_calls=[out["Ncal"].tolist()],
+            actual_level_samples=[out["Nsam"].tolist()],
+            completed=out["flg_cvg"],
+        )
+    )
+results = summarize(example, "GSS-MIS", N, Nrun, records)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--example", type=int, choices=[1, 2], default=1)
-    parser.add_argument("--samples", type=int, default=None)
-    parser.add_argument("--repeats", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=2026)
-    parser.add_argument("--output")
-    parser.add_argument("--sampler", choices=["CW_aMH", "aCS", "HMC", "ES"], default="CW_aMH")
-    args = parser.parse_args()
-    result = drive_GSS_MIS(args.example, args.samples, args.repeats, args.seed, args.sampler)
-    print(json.dumps({k: v for k, v in result.items() if k != "records"}, indent=2))
-    if args.output:
-        with open(args.output, "w") as f:
-            json.dump(result, f, indent=2)
+print(json.dumps({k: v for k, v in results.items() if k != "records"}, indent=2))

@@ -1,5 +1,4 @@
-"""Drive scalar SuS benchmarks through SeMCS, using independent component chains."""
-import argparse
+"""Edit the settings below, then run this script from the repository root."""
 import json
 import numpy as np
 from SuS import SuS
@@ -24,56 +23,40 @@ def estimate_pf(result, clip_threshold=True):
     return probability
 
 
-def drive_SuS(example=1, N=None, repeats=100, seed=2026, sampler_name="CW_aMH"):
-    if isinstance(example, str) and example.startswith("Ex"):
-        example = int(example[2:])
-    if example not in (1, 2) or repeats < 1:
-        raise ValueError("Choose example 1 or 2 and positive repeats")
-    N = (240, 180)[example - 1] if N is None else N
-    if N < 20:
-        raise ValueError("N must be at least 20")
-    records = []
-    for repetition in range(repeats):
-        probabilities, calls, terminal, sizes = [], [], [], []
-        for component in range(2 * example):
-            pf = ScalarExample(example, component)
-            model = SuS(pf, "physical", "midpoint", False)
-            sampler = {"CW_aMH": CW_aMH, "aCS": aCS, "HMC": HMC, "ES": ES}[sampler_name](
-                model, Random(seed + repetition + 10000 * (component + 1))
-            )
-            engine = SeMCS(sampler)
-            engine.NumSam = N
-            engine.MaxIte = 1000
-            out = engine.RunIte()
-            probabilities.append(float(estimate_pf(out, model.clip_threshold)))
-            assert pf.joint_count == int(sum(out["Ncal"]))
-            calls.append(out["Ncal"].tolist())
-            terminal.append(out["flg_cvg"])
-            sizes.append(out["Nsam"].tolist())
-        records.append(
-            dict(
-                seed=seed + repetition,
-                probability=probabilities,
-                joint_calls=sum(map(sum, calls)),
-                layer_joint_calls=calls,
-                actual_level_samples=sizes,
-                completed=all(terminal),
-            )
+# %% Problem and sampling settings
+example = 1
+N = 240                     # Constant samples per level
+Nrun = 100                  # Set to 1 for a single run
+SamplerClass = CW_aMH       # CW_aMH, aCS, HMC or ES
+
+# %% Run simulations
+if example not in (1, 2) or N < 20 or Nrun < 1:
+    raise ValueError("Choose example 1 or 2, N >= 20 and Nrun >= 1")
+records = []
+for repetition in range(Nrun):
+    probabilities, calls, terminal, sizes = [], [], [], []
+    for component in range(2 * example):
+        pf = ScalarExample(example, component)
+        model = SuS(pf, "physical", "midpoint", False)
+        sampler = SamplerClass(model, Random(None))
+        engine = SeMCS(sampler)
+        engine.NumSam = N
+        engine.MaxIte = 1000
+        out = engine.RunIte()
+        probabilities.append(float(estimate_pf(out, model.clip_threshold)))
+        assert pf.joint_count == int(sum(out["Ncal"]))
+        calls.append(out["Ncal"].tolist())
+        terminal.append(out["flg_cvg"])
+        sizes.append(out["Nsam"].tolist())
+    records.append(
+        dict(
+            probability=probabilities,
+            joint_calls=sum(map(sum, calls)),
+            layer_joint_calls=calls,
+            actual_level_samples=sizes,
+            completed=all(terminal),
         )
-    return summarize(example, "SuS", N, repeats, seed, records)
+    )
+results = summarize(example, "SuS", N, Nrun, records)
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--example", type=int, choices=[1, 2], default=1)
-    parser.add_argument("--samples", type=int, default=None)
-    parser.add_argument("--repeats", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=2026)
-    parser.add_argument("--output")
-    parser.add_argument("--sampler", choices=["CW_aMH", "aCS", "HMC", "ES"], default="CW_aMH")
-    args = parser.parse_args()
-    result = drive_SuS(args.example, args.samples, args.repeats, args.seed, args.sampler)
-    print(json.dumps({k:v for k,v in result.items() if k != "records"}, indent=2))
-    if args.output:
-        with open(args.output, "w") as f:
-            json.dump(result, f, indent=2)
+print(json.dumps({k: v for k, v in results.items() if k != "records"}, indent=2))

@@ -89,26 +89,20 @@ python -m pip install -r requirements.txt
 
 ## Quick start
 
-Run one Example 1 simulation from the repository root, using 440 samples per level and the `CW_aMH` sampler:
+Edit `example`, `N`, `Nrun` and `SamplerClass` inside `drive_GSS_MIS.py` or `drive_SuS.py`. Select `SamplerClass = CW_aMH` (the default), or choose another supplied sampler: `CW_aMH`, `aCS`, `HMC` or `ES`.
+
+Both scripts default to Example 1 and 100 runs. `drive_GSS_MIS` uses 440 samples per level and `drive_SuS` uses 240. For Example 2, set the sample counts to 410 and 180, respectively. For a single run, set `Nrun = 1` inside the script.
+
+Run the chosen script from the repository root:
 
 ```bash
-python drive_GSS_MIS.py --example 1 --samples 440 --sampler CW_aMH --repeats 1
+python drive_GSS_MIS.py
+python drive_SuS.py
 ```
 
-Change `--example`, `--samples` and `--sampler` to select the problem, scalar sample size and MCMC sampler. `--repeats` controls independent runs; `--seed` fixes the random seed and `--output results.json` saves the full results. The SuS driver accepts the same options:
+Use `drive_GSS_MIS` for GSuS-MIS or `drive_SuS` for the scalar SuS comparison.
 
-```bash
-python drive_SuS.py --example 2 --samples 410 --sampler CW_aMH --repeats 1
-```
-
-The GSS-MIS driver can also be called from Python:
-
-```python
-from drive_GSS_MIS import drive_GSS_MIS
-
-result = drive_GSS_MIS(example=1, N=440, repeats=1, sampler_name="CW_aMH")
-print(result["mean"], result["mean_joint_calls"])
-```
+Use multiple runs to estimate statistics across independent runs.
 
 ## Built-in examples
 
@@ -127,7 +121,7 @@ The samplers use Gaussian reference coordinates with dimension taken from the mo
 
 1. Follow `Limit_state_functions/Ex1.py` to provide `Ndim`, `nfun`, `count`, and an `evaluate(X)` method returning an array of shape `[nfun, nsamples]` for input `[Ndim, nsamples]`. Set `Rdis = Direct(marginals)` for independent physical marginals that are not standard normal.
 2. Increment `count` by `nfun * nsamples` on every actual evaluation; optionally track `joint_count` by `nsamples` for reporting.
-3. Construct `state = GSS_MIS(model)`, `sampler = CW_aMH(state, Random(seed))`,
+3. Construct `state = GSS_MIS(model)`, `sampler = CW_aMH(state, Random(None))`,
    and `engine = SeMCS(sampler)`. Set `engine.NumSam = N` and call
    `result = engine.RunIte()`, followed by `MIS(result).Pf_hat`.
 
@@ -139,7 +133,7 @@ from Support_Fun.MIS import MIS
 from Support_Fun.random import Random
 from Limit_state_functions.Ex1 import Ex1
 
-engine = SeMCS(CW_aMH(GSS_MIS(Ex1()), Random(2026)))
+engine = SeMCS(CW_aMH(GSS_MIS(Ex1()), Random(None)))
 engine.NumSam = 440
 engine.MaxIte = 1000
 result = engine.RunIte()
@@ -158,7 +152,7 @@ The raw sampling history `g` contains `Nite` sampled states followed by one fina
 | `cov` | Empirical standard deviation divided by the mean |
 | `mean_joint_calls` | Mean number of joint model evaluations |
 | `unfinished` | Number of repetitions that did not complete all target events |
-| `records` | Per-repetition probabilities, seeds, completion flags and counts |
+| `records` | Per-repetition probabilities, completion flags and counts |
 | `layer_joint_calls`, `actual_level_samples` within records | Actual evaluations and sample counts for each sampled level |
 
 All repetitions are retained, including unfinished runs. Use at least two repetitions for empirical CoV; it is not a single-run error bound.
@@ -181,13 +175,11 @@ The SuS baseline runs each performance function independently and sums the actua
 
 ## Implementation notes
 
-The random generator is NumPy's `default_rng`. The same integer seed in Python and MATLAB does not imply identical random trajectories.
-
 - Coordinate/function arrays use rows for dimensions or performance functions and columns for samples. MCMC arrays use `[Ndim, Nc, Ns]` and column-major flattening; Python indices start at zero.
 - GSuS quantiles use NumPy's `hazen` method. Seed standard deviations use `ddof=1`, with zero spread for a single seed. Positive half-integer chain counts are rounded upward.
 - The component-wise Metropolis scale is fixed within each level. The initial independent sample is retained; subsequent chain steps do not prepend the seeds.
 - Historical proposal supports and realized sample counts are stored in the returned result dictionary and reused by the MIS estimator. Estimation does not mutate the stored function values.
-- The driver accepts command-line options and runs repetitions serially. `--output` saves the complete replicate records as JSON.
+- The scripts run repetitions serially and retain the results in memory.
 
 ## Citation
 
