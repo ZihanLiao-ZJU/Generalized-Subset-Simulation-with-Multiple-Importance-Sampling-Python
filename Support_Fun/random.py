@@ -13,7 +13,7 @@ import numpy as np
 class Random:
     """Independent Python RNG, with source call shapes; not MATLAB seeded parity."""
 
-    def __init__(self, seed):
+    def __init__(self, seed=None):
         self.rng = np.random.default_rng(seed)
 
     def rand(self, *shape):

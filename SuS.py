@@ -14,6 +14,8 @@ from Support_Fun.SedSlt import SedSlt
 class SuS:
     """Scalar Gaussian-reference ISD with source-specific threshold rules."""
 
+    MaxIte = 1000
+
     @property
     def p(self):
         return self.G["p"]

@@ -18,6 +18,8 @@ from Support_Fun.SedSlt import SedSlt, support, likelihood, update_y
 class GSS_MIS:
     """Union intermediate distribution; iteration is owned by SeMCS."""
 
+    MaxIte = 1000
+
     @property
     def p(self):
         return self.G["p"]

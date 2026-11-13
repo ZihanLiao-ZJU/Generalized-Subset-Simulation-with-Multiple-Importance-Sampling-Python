@@ -1,6 +1,7 @@
 """Shared MATLAB-compatible sampler contract in Gaussian/Nataf coordinates."""
 
 import numpy as np
+from Support_Fun.random import Random
 
 
 class MCMCBase:
@@ -8,7 +9,7 @@ class MCMCBase:
 
     def __init__(self, BayStc=None, rng=None):
         self.BayStc = BayStc
-        self.rng = np.random if rng is None else rng
+        self.rng = Random() if rng is None else rng
 
     @property
     def Ndim(self):

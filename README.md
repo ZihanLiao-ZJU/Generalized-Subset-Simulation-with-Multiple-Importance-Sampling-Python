@@ -75,7 +75,6 @@ python -m pip install -r requirements.txt
 │   ├── Direct.py
 │   ├── MIS.py
 │   ├── MisInt.py
-│   ├── ScalarExample.py
 │   ├── SedSlt.py
 │   ├── WgtMis_Blc.py
 │   ├── __init__.py
@@ -89,7 +88,7 @@ python -m pip install -r requirements.txt
 
 ## Quick start
 
-Edit `example`, `N`, `Nrun` and `SamplerClass` inside `drive_GSS_MIS.py` or `drive_SuS.py`. Select `SamplerClass = CW_aMH` (the default), or choose another supplied sampler: `CW_aMH`, `aCS`, `HMC` or `ES`.
+Choose `Problem = Ex1` or `Problem = Ex2` in either driver. Both scripts define the sample count `N`, repeat count `Nrun` and `SamplerClass`. Available samplers are `CW_aMH` (default), `aCS`, `HMC` and `ES`.
 
 Both scripts default to Example 1 and 100 runs. `drive_GSS_MIS` uses 440 samples per level and `drive_SuS` uses 240. For Example 2, set the sample counts to 410 and 180, respectively. For a single run, set `Nrun = 1` inside the script.
 
@@ -121,7 +120,7 @@ The samplers use Gaussian reference coordinates with dimension taken from the mo
 
 1. Follow `Limit_state_functions/Ex1.py` to provide `Ndim`, `nfun`, `count`, and an `evaluate(X)` method returning an array of shape `[nfun, nsamples]` for input `[Ndim, nsamples]`. Set `Rdis = Direct(marginals)` for independent physical marginals that are not standard normal.
 2. Increment `count` by `nfun * nsamples` on every actual evaluation; optionally track `joint_count` by `nsamples` for reporting.
-3. Construct `state = GSS_MIS(model)`, `sampler = CW_aMH(state, Random(None))`,
+3. Construct `state = GSS_MIS(model)`, `sampler = CW_aMH(state)`,
    and `engine = SeMCS(sampler)`. Set `engine.NumSam = N` and call
    `result = engine.RunIte()`, followed by `MIS(result).Pf_hat`.
 
@@ -130,12 +129,10 @@ from GSS_MIS import GSS_MIS
 from SeMCS import SeMCS
 from MCMC_samplers.CW_aMH import CW_aMH
 from Support_Fun.MIS import MIS
-from Support_Fun.random import Random
 from Limit_state_functions.Ex1 import Ex1
 
-engine = SeMCS(CW_aMH(GSS_MIS(Ex1()), Random(None)))
+engine = SeMCS(CW_aMH(GSS_MIS(Ex1())))
 engine.NumSam = 440
-engine.MaxIte = 1000
 result = engine.RunIte()
 print(MIS(result).Pf_hat)
 ```

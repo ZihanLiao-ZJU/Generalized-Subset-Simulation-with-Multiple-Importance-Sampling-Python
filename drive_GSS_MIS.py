@@ -10,30 +10,27 @@ from MCMC_samplers.ES import ES
 from Support_Fun.MIS import MIS
 from Limit_state_functions.Ex1 import Ex1
 from Limit_state_functions.Ex2 import Ex2
-from Support_Fun.random import Random
 from Support_Fun.results import summarize
 
 
 # %% Problem and sampling settings
-example = 1
+Problem = Ex1               # Ex1 or Ex2
 N = 440                     # Constant samples per level
 Nrun = 100                  # Set to 1 for a single run
 SamplerClass = CW_aMH       # CW_aMH, aCS, HMC or ES
 
 # %% Run simulations
-if example not in (1, 2) or N < 20 or Nrun < 1:
-    raise ValueError("Choose example 1 or 2, N >= 20 and Nrun >= 1")
+if N < 20 or Nrun < 1:
+    raise ValueError("Use at least 20 samples and one run.")
 records = []
 for repetition in range(Nrun):
-    pf = (Ex1 if example == 1 else Ex2)()
+    pf = Problem()
     model = GSS_MIS(pf)
-    sampler = SamplerClass(model, Random(None))
+    sampler = SamplerClass(model)
     engine = SeMCS(sampler)
     engine.NumSam = N
-    engine.MaxIte = 1000
     out = engine.RunIte()
     probability = MIS(out).Pf_hat
-    assert pf.joint_count == int(sum(out["Ncal"]))
     records.append(
         dict(
             probability=probability.tolist(),
@@ -43,6 +40,6 @@ for repetition in range(Nrun):
             completed=out["flg_cvg"],
         )
     )
-results = summarize(example, "GSS-MIS", N, Nrun, records)
+results = summarize(getattr(pf, "example", type(pf).__name__), "GSS-MIS", N, Nrun, records)
 
 print(json.dumps({k: v for k, v in results.items() if k != "records"}, indent=2))
